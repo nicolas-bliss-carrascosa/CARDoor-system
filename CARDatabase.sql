@@ -28,7 +28,7 @@ CREATE TABLE `Doors` (
   `ExpectedState` bool -- standin for more complicated enum !
 );
 
-CREATE TABLE `FacilityXRole` (
+CREATE TABLE `DoorXRole` (
   `RoleId` integer,
   `FacilityId` integer,
   `DateIssued` timestamp,
@@ -59,9 +59,9 @@ ALTER TABLE `UserXRole` ADD FOREIGN KEY (`UserRoleId`) REFERENCES `Roles` (`Role
 
 ALTER TABLE `Doors` ADD FOREIGN KEY (`FacilityId`) REFERENCES `Facilities` (`FacilityId`);
 
-ALTER TABLE `FacilityXRole` ADD FOREIGN KEY (`FacilityId`) REFERENCES `Facilities` (`FacilityId`);
+ALTER TABLE `DoorXRole` ADD FOREIGN KEY (`DoorId`) REFERENCES `Doors` (`DoorId`);
 
-ALTER TABLE `FacilityXRole` ADD FOREIGN KEY (`RoleId`) REFERENCES `Roles` (`RoleId`);
+ALTER TABLE `DoorXRole` ADD FOREIGN KEY (`RoleId`) REFERENCES `Roles` (`RoleId`);
 
 ALTER TABLE `Logs` ADD FOREIGN KEY (`DoorId`) REFERENCES `Doors` (`DoorId`);
 
