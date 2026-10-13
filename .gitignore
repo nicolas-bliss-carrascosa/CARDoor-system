@@ -1,3 +1,5 @@
 # Python environments
 venv/
 .venv/
+.direnv
+__pycache__
