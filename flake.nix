@@ -3,20 +3,22 @@
 
   inputs = {
     # recent non-unstable nixpkgs. no special intention
-    nixpkgs.url = "https://channels.nixos.org/nixpkgs-26.05/nixexprs.tar.zst";
+    nixpkgs.url = "https://channels.nixos.org/nixos-unstable/nixexprs.tar.zst";
   };
 
-  outputs = inputs: {
-    devShell = {pkgs, system}: {
-      default = pkgs.mkShell.override {
-        # override stdenv stuff here, if need be
-      } {
-        packages = with pkgs; [
+  outputs =
+    { self, nixpkgs }:
+    let
+      system = "x86_64-linux";
+      pkgs = import nixpkgs { inherit system; };
+    in
+    {
+      devShells.${system}.default = pkgs.mkShell {
+        buildInputs = with pkgs; [
+          sqlite
           # the packages we want
         ];
+        shellHook = "";
       };
-    }
-    # set c formatter
-    #formatter = ; 
-  };
+    };
 }
