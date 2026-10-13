@@ -16,6 +16,9 @@
       devShells.${system}.default = pkgs.mkShell {
         buildInputs = with pkgs; [
           sqlite
+          cargo
+          rustc
+          rust-analyzer
           # the packages we want
         ];
         shellHook = "";
