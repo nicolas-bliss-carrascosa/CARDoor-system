@@ -53,18 +53,18 @@ CREATE TABLE `LivenessLog` (
   PRIMARY KEY (`DoorId`, `Date`)
 );
 
-ALTER TABLE `UserXRole` ADD FOREIGN KEY (`UserId`) REFERENCES `Users` (`UserId`);
+-- ALTER TABLE `UserXRole` ADD FOREIGN KEY (`UserId`) REFERENCES `Users` (`UserId`);
 
-ALTER TABLE `UserXRole` ADD FOREIGN KEY (`UserRoleId`) REFERENCES `Roles` (`RoleId`);
+-- ALTER TABLE `UserXRole` ADD FOREIGN KEY (`UserRoleId`) REFERENCES `Roles` (`RoleId`);
 
-ALTER TABLE `Doors` ADD FOREIGN KEY (`FacilityId`) REFERENCES `Facilities` (`FacilityId`);
+-- ALTER TABLE `Doors` ADD FOREIGN KEY (`FacilityId`) REFERENCES `Facilities` (`FacilityId`);
 
-ALTER TABLE `FacilityXRole` ADD FOREIGN KEY (`FacilityId`) REFERENCES `Facilities` (`FacilityId`);
+-- ALTER TABLE `FacilityXRole` ADD FOREIGN KEY (`FacilityId`) REFERENCES `Facilities` (`FacilityId`);
 
-ALTER TABLE `FacilityXRole` ADD FOREIGN KEY (`RoleId`) REFERENCES `Roles` (`RoleId`);
+-- ALTER TABLE `FacilityXRole` ADD FOREIGN KEY (`RoleId`) REFERENCES `Roles` (`RoleId`);
 
-ALTER TABLE `Logs` ADD FOREIGN KEY (`DoorId`) REFERENCES `Doors` (`DoorId`);
+-- ALTER TABLE `Logs` ADD FOREIGN KEY (`DoorId`) REFERENCES `Doors` (`DoorId`);
 
-ALTER TABLE `Logs` ADD FOREIGN KEY (`UserId`) REFERENCES `Users` (`UserId`);
+-- ALTER TABLE `Logs` ADD FOREIGN KEY (`UserId`) REFERENCES `Users` (`UserId`);
 
-ALTER TABLE `LivenessLog` ADD FOREIGN KEY (`DoorId`) REFERENCES `Doors` (`DoorId`);
+-- ALTER TABLE `LivenessLog` ADD FOREIGN KEY (`DoorId`) REFERENCES `Doors` (`DoorId`);
