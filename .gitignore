@@ -1,2 +1,8 @@
 **/target
 **/*.db
+.venv
+.direnv
+
+# Added by cargo
+
+/target
