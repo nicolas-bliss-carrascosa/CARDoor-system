@@ -1,0 +1,9 @@
+[package]
+name = "sensor"
+version = "0.1.0"
+edition = "2024"
+
+[dependencies]
+flipperzero = "0.16.0"
+flipperzero-sys = "0.16.0"
+wireguard = "0.2.0"
