@@ -19,6 +19,9 @@
           cargo
           rustc
           rust-analyzer
+          gcc
+          pkg-config
+          rustup
           # the packages we want
         ];
         shellHook = "";
