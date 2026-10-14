@@ -20,6 +20,9 @@
           rustc
           rust-analyzer
           rustfmt
+          gcc
+          pkg-config
+          rustup
           # the packages we want
         ];
         shellHook = "";
