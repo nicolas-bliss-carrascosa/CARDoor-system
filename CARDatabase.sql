@@ -2,6 +2,7 @@
 
 CREATE TABLE `Users` (
   `UserId` integer PRIMARY KEY,
+  `Name` varchar(255),
   `DateIssued` timestamp
 );
 
@@ -15,6 +16,12 @@ CREATE TABLE `Facilities` (
   `Name` varchar(255)
 );
 
+CREATE TABLE `Doors` (
+  `DoorId` integer PRIMARY KEY,
+  `FacilityId` integer NOT NULL,
+  `ExpectedState` bool -- standin for more complicated enum !
+);
+
 CREATE TABLE `UserXRole` (
   `UserId` integer,
   `UserRoleId` integer,
@@ -22,18 +29,32 @@ CREATE TABLE `UserXRole` (
   PRIMARY KEY (`UserId`, `UserRoleId`)
 );
 
-CREATE TABLE `Doors` (
-  `DoorId` integer PRIMARY KEY,
-  `FacilityId` integer NOT NULL,
-  `ExpectedState` bool -- standin for more complicated enum !
-);
-
-CREATE TABLE `DoorXRole` (
-  `RoleId` integer,
+CREATE TABLE `FacilityXRole` (
   `FacilityId` integer,
+  `RoleId` integer,
   `DateIssued` timestamp,
   `ValidRange` timerange,
   PRIMARY KEY (`FacilityId`, `RoleId`)
+);
+
+-- exception layer: let a role access one particular door
+CREATE TABLE `DoorXRole` (
+  `RoleId` integer,
+  `DoorId` integer,
+  `Allowed` bool,     
+  `DateIssued` timestamp,
+  `ValidRange` timerange,
+  PRIMARY KEY (`RoleId`, `DoorId`)
+);
+
+-- exception layer: let a user access one particular door
+CREATE TABLE `UserXDoor` (
+  `UserId` integer,
+  `DoorId` integer,
+  `Allowed` bool,
+  `DateIssued` timestamp,
+  `ValidRange` timerange,
+  PRIMARY KEY (`UserId`, `DoorId`)
 );
 
 -- this is appendonly
@@ -59,9 +80,17 @@ ALTER TABLE `UserXRole` ADD FOREIGN KEY (`UserRoleId`) REFERENCES `Roles` (`Role
 
 ALTER TABLE `Doors` ADD FOREIGN KEY (`FacilityId`) REFERENCES `Facilities` (`FacilityId`);
 
+ALTER TABLE `FacilityXRole` ADD FOREIGN KEY (`FacilityId`) REFERENCES `Facilities` (`FacilityId`);
+
+ALTER TABLE `FacilityXRole` ADD FOREIGN KEY (`RoleID`) REFERENCES `Roles` (`RoleId`);
+
 ALTER TABLE `DoorXRole` ADD FOREIGN KEY (`DoorId`) REFERENCES `Doors` (`DoorId`);
 
 ALTER TABLE `DoorXRole` ADD FOREIGN KEY (`RoleId`) REFERENCES `Roles` (`RoleId`);
+
+ALTER TABLE `UserXRole` ADD FOREIGN KEY (`DoorId`) REFERENCES `Doors` (`DoorId`);
+
+ALTER TABLE `UserXRole` ADD FOREIGN KEY (`UserId`) REFERENCES `Users` (`UserId`);
 
 ALTER TABLE `Logs` ADD FOREIGN KEY (`DoorId`) REFERENCES `Doors` (`DoorId`);
 

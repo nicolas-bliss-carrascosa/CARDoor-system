@@ -1,0 +1,144 @@
+{% extends 'base.html' %}
+{% block title %}Facility{% endblock title %}
+{% block content %}
+<div class="container py-4">
+
+  {# Django messages (success/error feedback from your views) #}
+  {% if messages %}
+    {% for message in messages %}
+      <div class="alert alert-{{ message.tags|default:'info' }} alert-dismissible fade show" role="alert">
+        {{ message }}
+        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+      </div>
+    {% endfor %}
+  {% endif %}
+
+  {# Facility header #}
+  <div class="card shadow-sm mb-4">
+    <div class="card-body d-flex flex-wrap justify-content-between align-items-center">
+      <div>
+        <h1 class="h3 mb-1">{{ facility.name }}</h1>
+        <span class="text-muted">Facility ID:</span>
+        <span class="badge text-bg-secondary">{{ facility.id }}</span>
+      </div>
+      <div class="text-end mt-3 mt-md-0">
+        <span class="badge text-bg-primary me-1">{{ facility.groups|length }} group{{ facility.groups|length|pluralize }}</span>
+        <span class="badge text-bg-info">{{ facility.doors|length }} door{{ facility.doors|length|pluralize }}</span>
+      </div>
+    </div>
+  </div>
+
+  <div class="row g-4">
+
+    {# ============ GROUPS ============ #}
+    <div class="col-lg-6">
+      <div class="card shadow-sm h-100">
+        <div class="card-header bg-white">
+          <h2 class="h5 mb-0"><i class="bi bi-people-fill me-2"></i>Groups with Access</h2>
+        </div>
+
+        <ul class="list-group list-group-flush">
+          {% for group in facility.groups %}
+            <li class="list-group-item d-flex justify-content-between align-items-center">
+              <span>{{ group.name }}</span>
+              <button type="button"
+                      class="btn btn-sm btn-outline-danger"
+                      data-bs-toggle="modal"
+                      data-bs-target="#confirmRemoveModal"
+                      data-item-type="group"
+                      data-item-name="{{ group.name }}"
+                      >
+                <i class="bi bi-trash"></i> Remove
+              </button>
+            </li>
+          {% empty %}
+            <li class="list-group-item text-muted fst-italic">No groups have access to this facility.</li>
+          {% endfor %}
+        </ul>
+
+        <div class="card-footer bg-white">
+          <form method="post" class="row g-2">
+            {% csrf_token %}
+            <div class="col">
+              <label for="groupSelect" class="visually-hidden">Group</label>
+              <select id="groupSelect" name="group" class="form-select" required>
+                <option value="" selected disabled>Select a group to add...</option>
+                {% for group in available_groups %}
+                  <option value="{{ group.id }}">{{ group.name }}</option>
+                {% endfor %}
+              </select>
+            </div>
+            <div class="col-auto">
+              <button type="submit" class="btn btn-primary"><i class="bi bi-plus-lg"></i> Add Group</button>
+            </div>
+          </form>
+        </div>
+      </div>
+    </div>
+
+    {# ============ DOORS ============ #}
+    <div class="col-lg-6">
+      <div class="card shadow-sm h-100">
+        <div class="card-header bg-white">
+          <h2 class="h5 mb-0"><i class="bi bi-door-closed-fill me-2"></i>Doors</h2>
+        </div>
+
+        <ul class="list-group list-group-flush">
+          {% for door in facility.doors%}
+            <li class="list-group-item d-flex justify-content-between align-items-center">
+              <span>{{ door.name }}</span>
+              <button type="button"
+                      class="btn btn-sm btn-outline-danger"
+                      data-bs-toggle="modal"
+                      data-bs-target="#confirmRemoveModal"
+                      data-item-type="door"
+                      data-item-name="{{ door.name }}"
+                      >
+                <i class="bi bi-trash"></i> Remove
+              </button>
+            </li>
+          {% empty %}
+            <li class="list-group-item text-muted fst-italic">No doors have been added to this facility.</li>
+          {% endfor %}
+        </ul>
+
+        <div class="card-footer bg-white">
+          <form method="post"  class="row g-2">
+            {% csrf_token %}
+            <div class="col">
+              <label for="doorName" class="visually-hidden">Door name</label>
+              <input type="text" id="doorName" name="name" class="form-control" placeholder="New door name" maxlength="100" required>
+            </div>
+            <div class="col-auto">
+              <button type="submit" class="btn btn-primary"><i class="bi bi-plus-lg"></i> Add Door</button>
+            </div>
+          </form>
+        </div>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+{# ============ Shared remove-confirmation modal ============ #}
+<div class="modal fade" id="confirmRemoveModal" tabindex="-1" aria-labelledby="confirmRemoveLabel" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered">
+    <form method="post" id="confirmRemoveForm" class="modal-content">
+      {% csrf_token %}
+      <div class="modal-header">
+        <h5 class="modal-title" id="confirmRemoveLabel">Confirm removal</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+      </div>
+      <div class="modal-body">
+        Remove the <span id="confirmRemoveType"></span>
+        <strong id="confirmRemoveName"></strong>
+        from <strong>{{ facility.name }}</strong>?
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+        <button type="submit" class="btn btn-danger">Remove</button>
+      </div>
+    </form>
+  </div>
+</div>
+{% endblock content %}

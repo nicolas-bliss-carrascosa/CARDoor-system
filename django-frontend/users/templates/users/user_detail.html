@@ -1,0 +1,171 @@
+{% extends 'base.html' %}
+{% block title %}Search Users{% endblock title %}
+{% block content %}
+<div class="container py-4">
+  {% if messages %}
+    {% for message in messages %}
+      <div class="alert alert-{{ message.tags|default:'info' }} alert-dismissible fade show" role="alert">
+        {{ message }}
+        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+      </div>
+    {% endfor %}
+  {% endif %}
+
+  {# User header #}
+  <div class="card shadow-sm mb-4">
+    <div class="card-body d-flex flex-wrap justify-content-between align-items-center">
+      <div>
+        <h1 class="h3 mb-1">{{ user.name }}</h1>
+        <span class="text-muted">User ID:</span>
+        <span class="badge text-bg-secondary">{{ user.id }}</span>
+      </div>
+      <div class="text-end mt-3 mt-md-0">
+        <span class="badge text-bg-primary me-1">{{ user.roles|length }} role{{ user.roles|length|pluralize }}</span>
+        <span class="badge text-bg-info">{{ user.door_overrides|length }} door exception{{ user.door_overrides|length|pluralize }}</span>
+      </div>
+    </div>
+  </div>
+
+  <div class="row g-4">
+
+    {# ============ ROLES ============ #}
+    <div class="col-lg-6">
+      <div class="card shadow-sm h-100">
+        <div class="card-header bg-white">
+          <h2 class="h5 mb-0"><i class="bi bi-people-fill me-2"></i>Member Roles</h2>
+        </div>
+
+        <ul class="list-group list-group-flush">
+          {% for role in user.roles %}
+            <li class="list-group-item d-flex justify-content-between align-items-center">
+              <span>{{ role.name }}</span>
+              <button type="button"
+                      class="btn btn-sm btn-outline-danger"
+                      data-bs-toggle="modal"
+                      data-bs-target="#confirmRemoveModal"
+                      data-item-type="role"
+                      data-item-name="{{ role.name }}"
+                      data-action="{% url 'user_remove_role' user.id role.id %}">
+                <i class="bi bi-trash"></i> Remove
+              </button>
+            </li>
+          {% empty %}
+            <li class="list-group-item text-muted fst-italic">This user has no roles.</li>
+          {% endfor %}
+        </ul>
+
+        <div class="card-footer bg-white">
+          <form method="post"  class="row g-2">
+            {% csrf_token %}
+            <div class="col">
+              <label for="roleSelect" class="visually-hidden">Role</label>
+              <select id="roleSelect" name="role" class="form-select" required>
+                <option value="" selected disabled>Select a role to add...</option>
+                {% for role in available_roles %}
+                  <option value="{{ role.id }}">{{ role.name }}</option>
+                {% endfor %}
+              </select>
+            </div>
+            <div class="col-auto">
+              <button type="submit" class="btn btn-primary"><i class="bi bi-plus-lg"></i> Add Role</button>
+            </div>
+          </form>
+        </div>
+      </div>
+    </div>
+
+    {# ============ DOOR EXCEPTIONS ============ #}
+    <div class="col-lg-6">
+      <div class="card shadow-sm h-100">
+        <div class="card-header bg-white">
+          <h2 class="h5 mb-0"><i class="bi bi-door-closed-fill me-2"></i>Individual Door Exceptions</h2>
+          <div class="form-text mt-1">These override whatever this user's roles allow.</div>
+        </div>
+
+        <ul class="list-group list-group-flush">
+          {% for override in user.door_overrides %}
+            <li class="list-group-item d-flex justify-content-between align-items-center">
+              <div>
+                {% if override.allowed %}
+                  <span class="badge text-bg-success me-2"><i class="bi bi-check-lg"></i> Included</span>
+                {% else %}
+                  <span class="badge text-bg-danger me-2"><i class="bi bi-x-lg"></i> Excluded</span>
+                {% endif %}
+                {{ override.door_name }}
+                <span class="text-muted small">&middot; {{ override.facility_name }}</span>
+              </div>
+              <button type="button"
+                      class="btn btn-sm btn-outline-danger"
+                      data-bs-toggle="modal"
+                      data-bs-target="#confirmRemoveModal"
+                      data-item-type="exception for"
+                      data-item-name="{{ override.door_name }}"
+                    >
+                <i class="bi bi-trash"></i> Remove
+              </button>
+            </li>
+          {% empty %}
+            <li class="list-group-item text-muted fst-italic">No individual door exceptions.</li>
+          {% endfor %}
+        </ul>
+
+        <div class="card-footer bg-white">
+          <form method="post" class="row g-2">
+            {% csrf_token %}
+            <div class="col-12">
+              <label for="doorSelect" class="visually-hidden">Door</label>
+              <select id="doorSelect" name="door" class="form-select" required>
+                <option value="" selected disabled>Select a door...</option>
+                {% regroup available_doors by facility_name as facility_groups %}
+                {% for facility in facility_groups %}
+                  <optgroup label="{{ facility.grouper }}">
+                    {% for door in facility.list %}
+                      <option value="{{ door.id }}">{{ door.name }}</option>
+                    {% endfor %}
+                  </optgroup>
+                {% endfor %}
+              </select>
+            </div>
+            <div class="col">
+              <div class="form-check form-check-inline">
+                <input class="form-check-input" type="radio" name="allowed" id="allowedYes" value="1" checked>
+                <label class="form-check-label" for="allowedYes">Include</label>
+              </div>
+              <div class="form-check form-check-inline">
+                <input class="form-check-input" type="radio" name="allowed" id="allowedNo" value="0">
+                <label class="form-check-label" for="allowedNo">Exclude</label>
+              </div>
+            </div>
+            <div class="col-auto">
+              <button type="submit" class="btn btn-primary"><i class="bi bi-plus-lg"></i> Add Door</button>
+            </div>
+          </form>
+        </div>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+{# ============ Shared remove-confirmation modal ============ #}
+<div class="modal fade" id="confirmRemoveModal" tabindex="-1" aria-labelledby="confirmRemoveLabel" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered">
+    <form method="post" id="confirmRemoveForm" class="modal-content">
+      {% csrf_token %}
+      <div class="modal-header">
+        <h5 class="modal-title" id="confirmRemoveLabel">Confirm removal</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+      </div>
+      <div class="modal-body">
+        Remove the <span id="confirmRemoveType"></span>
+        <strong id="confirmRemoveName"></strong>
+        for <strong>{{ user.name }}</strong>?
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+        <button type="submit" class="btn btn-danger">Remove</button>
+      </div>
+    </form>
+  </div>
+</div>
+{% endblock content %}

@@ -1,0 +1,84 @@
+{% extends 'base.html' %}
+{% block title %}
+  Search Facilities
+{% endblock title %}
+{% block content %}
+  <div class="container my-4">
+    <div class="d-flex justify-content-between align-items-center mb-3">
+      <h3 class="mb-0">Facilities</h3>
+      <button type="button" class="btn btn-primary">+ Add Facility</button>
+    </div>
+
+    <!-- Toolbar: search, filter, sort -->
+    <form class="row g-2 mb-3" role="search" onsubmit="return false;">
+      <div class="col-12 col-md-6">
+        <label for="userSearch" class="visually-hidden"
+          >Search facilities</label
+        >
+        <div class="input-group">
+          <span class="input-group-text">🔍</span>
+          <input
+            type="search"
+            id="userSearch"
+            class="form-control"
+            placeholder="Search by name or id..."
+          />
+          <button class="btn btn-outline-secondary" type="button">
+            Search
+          </button>
+        </div>
+      </div>
+
+      <div class="col-6 col-md-3">
+        <label for="sortBy" class="visually-hidden">Sort by</label>
+        <select id="sortBy" class="form-select">
+          <option value="name-asc" selected>Name (A-Z)</option>
+          <option value="name-desc">Name (Z-A)</option>
+          <option value="id-asc">Id (low to high)</option>
+          <option value="id-desc">Id (high to low)</option>
+        </select>
+      </div>
+    </form>
+    <div class="card overflow-hidden">
+      <table class="table table-striped table-hover align-middle m-0">
+        <thead class="table-dark">
+          <tr>
+            <th scope="col">Name</th>
+            <th scope="col">Id</th>
+            <th scope="col" class="text-end">Actions</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for id, facility in facilities.items %}
+            <tr>
+              <td>
+                <a
+                  href="{% url 'facility_detail' id=id %}"
+                  class="text-decoration-none fw-bold"
+                >
+                  {{ facility.name }}
+                </a>
+              </td>
+              <td>{{ id }}</td>
+              <td class="text-end">
+                <button
+                  type="button"
+                  class="btn btn-sm btn-outline-danger"
+                  aria-label="Remove {{ facility.name }}"
+                >
+                  Remove
+                </button>
+              </td>
+            </tr>
+          {% empty %}
+            <tr>
+              <td colspan="3" class="text-center text-muted py-3">
+                No facilities found.
+              </td>
+            </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+{% endblock content %}
