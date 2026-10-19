@@ -3,3 +3,5 @@ venv/
 .venv/
 .direnv
 __pycache__
+
+*.sqlite3

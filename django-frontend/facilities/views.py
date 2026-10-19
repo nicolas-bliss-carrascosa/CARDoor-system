@@ -2,7 +2,6 @@ from django.shortcuts import render
 
 # Create your views here.
 
-# Every group that exists, used to fill the "add group" dropdown.
 ALL_GROUPS = [
     {"id": 1, "name": "Employee"},
     {"id": 2, "name": "Security"},
@@ -53,7 +52,6 @@ FACILITIES = {
  
  
 def available_groups(facility):
-    """Groups not yet attached to this facility (for the add-group dropdown)."""
     taken = {g["id"] for g in facility["groups"]}
     return [g for g in ALL_GROUPS if g["id"] not in taken]
  
