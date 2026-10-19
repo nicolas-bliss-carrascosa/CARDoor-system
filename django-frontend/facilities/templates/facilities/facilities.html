@@ -1,46 +1,37 @@
 {% extends 'base.html' %}
-{% block title %}
-  Search Facilities
-{% endblock title %}
+{% block title %}Search Facilities{% endblock title %}
 {% block content %}
-  <div class="container my-4">
-    <div class="d-flex justify-content-between align-items-center mb-3">
-      <h3 class="mb-0">Facilities</h3>
-      <button type="button" class="btn btn-primary">+ Add Facility</button>
+<div class="container my-4">
+  <div class="d-flex justify-content-between align-items-center mb-3">
+    <h3 class="mb-0">Facilities</h3>
+    <button type="button" class="btn btn-primary">+ Add Facility</button>
+  </div>
+
+  <!-- Toolbar: search, sort -->
+  <form class="row g-2 mb-3" role="search" onsubmit="return false;">
+    <div class="col-12 col-md-6">
+      <label for="facilitySearch" class="visually-hidden">Search facilities</label>
+      <div class="input-group">
+        <span class="input-group-text">🔍</span>
+        <input type="search" id="facilitySearch" class="form-control"
+               placeholder="Search by name or id...">
+      </div>
     </div>
 
-    <!-- Toolbar: search, filter, sort -->
-    <form class="row g-2 mb-3" role="search" onsubmit="return false;">
-      <div class="col-12 col-md-6">
-        <label for="userSearch" class="visually-hidden"
-          >Search facilities</label
-        >
-        <div class="input-group">
-          <span class="input-group-text">🔍</span>
-          <input
-            type="search"
-            id="userSearch"
-            class="form-control"
-            placeholder="Search by name or id..."
-          />
-          <button class="btn btn-outline-secondary" type="button">
-            Search
-          </button>
-        </div>
-      </div>
+    <div class="col-6 col-md-3">
+      <label for="sortBy" class="visually-hidden">Sort by</label>
+      <select id="sortBy" class="form-select">
+        <option value="name-asc" selected>Name (A-Z)</option>
+        <option value="name-desc">Name (Z-A)</option>
+        <option value="id-asc">Id (low to high)</option>
+        <option value="id-desc">Id (high to low)</option>
+      </select>
+    </div>
+  </form>
 
-      <div class="col-6 col-md-3">
-        <label for="sortBy" class="visually-hidden">Sort by</label>
-        <select id="sortBy" class="form-select">
-          <option value="name-asc" selected>Name (A-Z)</option>
-          <option value="name-desc">Name (Z-A)</option>
-          <option value="id-asc">Id (low to high)</option>
-          <option value="id-desc">Id (high to low)</option>
-        </select>
-      </div>
-    </form>
-    <div class="card overflow-hidden">
-      <table class="table table-striped table-hover align-middle m-0">
+  <div class="card overflow-hidden">
+    <div class="table-responsive">
+      <table id="facilityTable" class="table table-striped table-hover align-middle m-0">
         <thead class="table-dark">
           <tr>
             <th scope="col">Name</th>
@@ -50,35 +41,71 @@
         </thead>
         <tbody>
           {% for id, facility in facilities.items %}
-            <tr>
-              <td>
-                <a
-                  href="{% url 'facility_detail' id=id %}"
-                  class="text-decoration-none fw-bold"
-                >
-                  {{ facility.name }}
-                </a>
-              </td>
-              <td>{{ id }}</td>
-              <td class="text-end">
-                <button
-                  type="button"
-                  class="btn btn-sm btn-outline-danger"
-                  aria-label="Remove {{ facility.name }}"
-                >
-                  Remove
-                </button>
-              </td>
-            </tr>
+          <tr data-facility
+              data-name="{{ facility.name|lower }}"
+              data-id="{{ id|lower }}">
+            <td>
+              <a href="{% url 'facility_detail' id=id %}" class="text-decoration-none fw-bold">
+                {{ facility.name }}
+              </a>
+            </td>
+            <td>{{ id }}</td>
+            <td class="text-end">
+              <button type="button" class="btn btn-sm btn-outline-danger"
+                      aria-label="Remove {{ facility.name }}">
+                Remove
+              </button>
+            </td>
+          </tr>
           {% empty %}
-            <tr>
-              <td colspan="3" class="text-center text-muted py-3">
-                No facilities found.
-              </td>
-            </tr>
+          <tr>
+            <td colspan="3" class="text-center text-muted py-3">No facilities found.</td>
+          </tr>
           {% endfor %}
+          <tr id="noMatches" hidden>
+            <td colspan="3" class="text-center text-muted py-3">No facilities match your search.</td>
+          </tr>
         </tbody>
       </table>
     </div>
   </div>
+</div>
 {% endblock content %}
+
+{% block extra_js %}
+<script>
+  const search = document.getElementById('facilitySearch');
+  const sortBy = document.getElementById('sortBy');
+  const tbody = document.querySelector('#facilityTable tbody');
+  const noMatches = document.getElementById('noMatches');
+  const rows = [...tbody.querySelectorAll('tr[data-facility]')];
+
+  function applyFilter() {
+    const q = search.value.trim().toLowerCase();
+    let visible = 0;
+
+    for (const row of rows) {
+      row.hidden = q && !(row.dataset.name.includes(q) || row.dataset.id.includes(q));
+      if (!row.hidden) visible++;
+    }
+    noMatches.hidden = rows.length === 0 || visible > 0;
+  }
+
+  function applySort() {
+    const [key, dir] = sortBy.value.split('-');
+    const sorted = [...rows].sort((a, b) => {
+      // numeric: true sorts "2" before "10" and still works for non-numeric ids
+      const cmp = a.dataset[key].localeCompare(b.dataset[key], undefined, { numeric: true });
+      return dir === 'asc' ? cmp : -cmp;
+    });
+    sorted.forEach(r => tbody.appendChild(r));
+    tbody.appendChild(noMatches); // keep the "no matches" row last
+  }
+
+  search.addEventListener('input', applyFilter);
+  sortBy.addEventListener('change', applySort);
+
+  applySort();
+  applyFilter();
+</script>
+{% endblock extra_js %}

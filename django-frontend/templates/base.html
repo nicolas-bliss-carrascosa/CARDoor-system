@@ -24,11 +24,11 @@
                href="{% url 'dashboard' %}">Home</a>
           </li>
           <li class="nav-item">
-                        <a class="nav-link {% if request.path == '/' %}active{% endif %}"
+                        <a class="nav-link {% if request.path == '/users' %}active{% endif %}"
                href="{% url 'users' %}">Users</a>
           </li>
           <li class="nav-item">
-                        <a class="nav-link {% if request.path == '/' %}active{% endif %}"
+                        <a class="nav-link {% if request.path == '/facilities' %}active{% endif %}"
                href="{% url 'facilities' %}">Facilities</a>
           </li>
         </ul>
@@ -41,5 +41,6 @@
   </main>
 
   <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+  {% block extra_js %}{% endblock %}
 </body>
 </html>

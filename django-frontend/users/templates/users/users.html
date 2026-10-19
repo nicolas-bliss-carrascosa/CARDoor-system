@@ -1,72 +1,127 @@
 {% extends 'base.html' %}
 {% block title %}Search Users{% endblock title %}
 {% block content %}
-  <div class="container my-4">
-    <h3 class="mb-3">Users</h3>
+<div class="container my-4">
+  <div class="d-flex justify-content-between align-items-center mb-3">
+    <h3 class="mb-0">Users</h3>
+    <button type="button" class="btn btn-primary">+ Add User</button>
+  </div>
 
-    <!-- Toolbar: search, filter, sort -->
-    <form class="row g-2 mb-3" role="search" onsubmit="return false;">
-      <div class="col-12 col-md-6">
-        <label for="userSearch" class="visually-hidden">Search users</label>
-        <div class="input-group">
-          <span class="input-group-text">🔍</span>
-          <input type="search" id="userSearch" class="form-control" placeholder="Search by name or id...">
-          <button class="btn btn-outline-secondary" type="button">Search</button>
-        </div>
-      </div>
-
-      <div class="col-6 col-md-3">
-        <label for="groupFilter" class="visually-hidden">Filter by group</label>
-        <select id="groupFilter" class="form-select">
-          <option value="" selected>All groups</option>
-          <option value="admin">Admin</option>
-          <option value="editor">Editor</option>
-          <option value="viewer">Viewer</option>
-        </select>
-      </div>
-
-      <div class="col-6 col-md-3">
-        <label for="sortBy" class="visually-hidden">Sort by</label>
-        <select id="sortBy" class="form-select">
-          <option value="name-asc" selected>Name (A-Z)</option>
-          <option value="name-desc">Name (Z-A)</option>
-          <option value="id-asc">Id (low to high)</option>
-          <option value="id-desc">Id (high to low)</option>
-          <option value="group-asc">Group (A-Z)</option>
-        </select>
-      </div>
-    </form>
-    
-    <div class="card overflow-hidden">
-      <div class="table-responsive">
-        <table class="table table-striped table-hover align-middle m-0">
-          <thead class="table-dark">
-            <tr>
-              <th scope="col">Name</th>
-              <th scope="col">Id</th>
-              <th scope="col">Group</th>
-            </tr>
-          </thead>
-          <tbody>
-            <!-- Dynamically loop through your mock users list -->
-            {% for id, user in users.items %}
-            <tr>
-              <td>
-                <a href="{% url 'user_detail' id=id %}" class="text-decoration-none fw-bold">
-                  {{ user.name }}
-                </a>
-              </td>
-              <td>{{ id }}</td>
-              <td>{{ user.role }}</td>
-            </tr>
-            {% empty %}
-            <tr>
-              <td colspan="3" class="text-center text-muted py-3">No users found.</td>
-            </tr>
-            {% endfor %}
-          </tbody>
-        </table>
+  <!-- Toolbar: search, filter, sort -->
+  <form class="row g-2 mb-3" role="search" onsubmit="return false;">
+    <div class="col-12 col-md-6">
+      <label for="userSearch" class="visually-hidden">Search users</label>
+      <div class="input-group">
+        <span class="input-group-text">🔍</span>
+        <input type="search" id="userSearch" class="form-control" placeholder="Search by name or id...">
       </div>
     </div>
+
+    <div class="col-6 col-md-3">
+      <label for="groupFilter" class="visually-hidden">Filter by group</label>
+      <select id="groupFilter" class="form-select">
+        <option value="" selected>All groups</option>
+        <option value="admin">Admin</option>
+        <option value="editor">Editor</option>
+        <option value="viewer">Viewer</option>
+      </select>
+    </div>
+
+    <div class="col-6 col-md-3">
+      <label for="sortBy" class="visually-hidden">Sort by</label>
+      <select id="sortBy" class="form-select">
+        <option value="name-asc" selected>Name (A-Z)</option>
+        <option value="name-desc">Name (Z-A)</option>
+        <option value="id-asc">Id (low to high)</option>
+        <option value="id-desc">Id (high to low)</option>
+        <option value="group-asc">Group (A-Z)</option>
+      </select>
+    </div>
+  </form>
+
+  <div class="card overflow-hidden">
+    <div class="table-responsive">
+      <table id="userTable" class="table table-striped table-hover align-middle m-0">
+        <thead class="table-dark">
+          <tr>
+            <th scope="col">Name</th>
+            <th scope="col">Id</th>
+            <th scope="col">Group</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for id, user in users.items %}
+          <tr data-user
+              data-name="{{ user.name|lower }}"
+              data-id="{{ id|lower }}"
+              data-groups="{{ user.role|join:'|'|lower }}"
+              data-group="{{ user.role|first|lower }}">
+            <td>
+              <a href="{% url 'user_detail' id=id %}" class="text-decoration-none fw-bold">
+                {{ user.name }}
+              </a>
+            </td>
+            <td>{{ id }}</td>
+            <td>
+              {% for group in user.role %}
+                {{ group }}<br/>
+              {% endfor %}
+            </td>
+          </tr>
+          {% empty %}
+          <tr>
+            <td colspan="3" class="text-center text-muted py-3">No users found.</td>
+          </tr>
+          {% endfor %}
+          <tr id="noMatches" hidden>
+            <td colspan="3" class="text-center text-muted py-3">No users match your filters.</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
   </div>
+</div>
 {% endblock content %}
+
+{% block extra_js %}
+<script>
+  const search = document.getElementById('userSearch');
+  const groupFilter = document.getElementById('groupFilter');
+  const sortBy = document.getElementById('sortBy');
+  const tbody = document.querySelector('#userTable tbody');
+  const noMatches = document.getElementById('noMatches');
+  const rows = [...tbody.querySelectorAll('tr[data-user]')];
+
+  function applyFilter() {
+    const q = search.value.trim().toLowerCase();
+    const group = groupFilter.value;
+    let visible = 0;
+
+    for (const row of rows) {
+      const matchesText = !q || row.dataset.name.includes(q) || row.dataset.id.includes(q);
+      const matchesGroup = !group || row.dataset.groups.split('|').includes(group);
+      row.hidden = !(matchesText && matchesGroup);
+      if (!row.hidden) visible++;
+    }
+    noMatches.hidden = rows.length === 0 || visible > 0;
+  }
+
+  function applySort() {
+    const [key, dir] = sortBy.value.split('-');
+    const sorted = [...rows].sort((a, b) => {
+      // numeric: true sorts "2" before "10" and still works for non-numeric ids
+      const cmp = a.dataset[key].localeCompare(b.dataset[key], undefined, { numeric: true });
+      return dir === 'asc' ? cmp : -cmp;
+    });
+    sorted.forEach(r => tbody.appendChild(r));
+    tbody.appendChild(noMatches); 
+  }
+
+  search.addEventListener('input', applyFilter);
+  groupFilter.addEventListener('change', applyFilter);
+  sortBy.addEventListener('change', applySort);
+
+  applySort();
+  applyFilter();
+</script>
+{% endblock extra_js %}

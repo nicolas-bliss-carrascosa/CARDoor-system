@@ -5,12 +5,12 @@ MOCK_USERS = {
     101: {
         'id': 101,
         'name': 'alice',
-        'role': 'professor'
+        'role': ['professor', 'dean']
     },
     102: {
         'id': 102,
         'name': 'bob',
-        'role': 'student'
+        'role': ['student']
     }
 }
 

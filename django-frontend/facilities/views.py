@@ -21,11 +21,11 @@ FACILITIES = {
             {"id": 4, "name": "Contractor"},
         ],
         "doors": [
-            {"id": 1, "name": "Main lobby"},
-            {"id": 2, "name": "Floor 2"},
-            {"id": 3, "name": "Server room"},
-            {"id": 4, "name": "Executive suite"},
-            {"id": 5, "name": "Loading dock"},
+            {"id": 1, "name": "Main lobby", "allowed" : True},
+            {"id": 2, "name": "Floor 2", "allowed" : True},
+            {"id": 3, "name": "Server room", "allowed" : False},
+            {"id": 4, "name": "Executive suite", "allowed" : False},
+            {"id": 5, "name": "Loading dock", "allowed" : False},
         ],
     },
     2: {
@@ -37,25 +37,13 @@ FACILITIES = {
             {"id": 3, "name": "Night Staff"},
         ],
         "doors": [
-            {"id": 6, "name": "Front office"},
-            {"id": 7, "name": "Warehouse floor"},
-            {"id": 8, "name": "Loading bay"},
-            {"id": 9, "name": "Cold storage"},
+            {"id": 6, "name": "Front office", "allowed" : True},
+            {"id": 7, "name": "Warehouse floor", "allowed" : False},
+            {"id": 8, "name": "Loading bay", "allowed" : False},
+            {"id": 9, "name": "Cold storage", "allowed" : True},
         ],
     },
     3: {
-        "id": 3,
-        "name": "Data Center",
-        "groups": [
-            {"id": 2, "name": "Security"},
-        ],
-        "doors": [
-            {"id": 10, "name": "Entrance"},
-            {"id": 11, "name": "Cage"},
-        ],
-    },
-
-    4: {
         "id": 4,
         "name": "Annex",
         "groups": [],

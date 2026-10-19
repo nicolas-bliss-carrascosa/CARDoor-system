@@ -28,7 +28,7 @@
     </div>
   </div>
 
-  <div class="row g-4">
+  <div class="row g-4 align-items-start">
 
     {# ============ GROUPS ============ #}
     <div class="col-lg-6">
@@ -87,8 +87,16 @@
           {% for door in facility.doors%}
             <li class="list-group-item d-flex justify-content-between align-items-center">
               <span>{{ door.name }}</span>
+            <div>
+              {% if door.allowed == True %}
               <button type="button"
-                      class="btn btn-sm btn-outline-danger"
+                      class="btn btn-sm btn-primary">Lock door</button>
+              {% else %}
+              <button type="button"
+                      class="btn btn-sm btn-outline-danger">Unlock door</button>
+              {% endif %}
+              <button type="button"
+                      class="btn btn-sm btn-outline-danger ms-2"
                       data-bs-toggle="modal"
                       data-bs-target="#confirmRemoveModal"
                       data-item-type="door"
@@ -96,6 +104,7 @@
                       >
                 <i class="bi bi-trash"></i> Remove
               </button>
+              </div>
             </li>
           {% empty %}
             <li class="list-group-item text-muted fst-italic">No doors have been added to this facility.</li>
