@@ -1,182 +1,88 @@
--- I DID USE AI FOR THIS PART but if you want to handmake data go ahead I'm impressed you have all that patience
+BEGIN;
 
+-- ---------------------------------------------------------------- users app
+INSERT INTO "Users" ("UserId", "Name", "DateIssued") VALUES
+  (1, 'Alice Admin',    '2026-01-05 09:00:00'),
+  (2, 'Bob Employee',   '2026-02-10 09:00:00'),
+  (3, 'Carol Contract', '2026-03-01 09:00:00'),
+  (4, 'Dan Custodian',  '2026-03-15 09:00:00'),
+  (5, 'Eve Employee',   '2026-04-20 09:00:00'),
+  (6, 'Frank NewHire',  '2026-10-19 09:00:00');  -- no roles yet
 
+INSERT INTO "Roles" ("RoleId", "description") VALUES
+  (1, 'Admin'),
+  (2, 'Employee'),
+  (3, 'Contractor'),
+  (4, 'Janitorial');
 
--- Safe to re-run: it clears the tables first (children before parents).
--- Enable FK checking on your connection with: PRAGMA foreign_keys = ON;
---
--- Conventions:
---   timestamps  -> 'YYYY-MM-DD HH:MM:SS' text
---   ValidRange  -> 'start/end' text (ISO dates), or NULL for "no restriction"
---   bool        -> 1 / 0
+INSERT INTO "UserXRole" ("UserId", "UserRoleId", "DateIssued") VALUES
+  (1, 1, '2026-01-05 09:05:00'),
+  (2, 2, '2026-02-10 09:05:00'),
+  (3, 3, '2026-03-01 09:05:00'),
+  (4, 4, '2026-03-15 09:05:00'),
+  (5, 2, '2026-04-20 09:05:00');
 
+-- ----------------------------------------------------------- facilities app
+INSERT INTO "Facilities" ("FacilityId", "Name") VALUES
+  (1, 'Headquarters'),
+  (2, 'Warehouse');
 
-BEGIN TRANSACTION;
+-- ExpectedState: TRUE = expected locked
+INSERT INTO "Doors" ("DoorId", "FacilityId", "Name", "ExpectedState") VALUES
+  (1, 1, 'HQ Front Entrance', TRUE),
+  (2, 1, 'HQ Server Room',    TRUE),
+  (3, 1, 'HQ Lab',            TRUE),
+  (4, 2, 'Warehouse Dock',    TRUE),
+  (5, 2, 'Warehouse Office',  TRUE),
+  (6, 2, 'Warehouse Cage',    TRUE);
 
-DELETE FROM `LivenessLog`;
-DELETE FROM `Logs`;
-DELETE FROM `UserXDoor`;
-DELETE FROM `DoorXRole`;
-DELETE FROM `FacilityXRole`;
-DELETE FROM `UserXRole`;
-DELETE FROM `Doors`;
-DELETE FROM `Facilities`;
-DELETE FROM `Roles`;
-DELETE FROM `Users`;
+-- Facility-wide access by role. NULL ValidFrom/ValidTo = unbounded.
+INSERT INTO "FacilityXRole" ("FacilityId", "RoleId", "DateIssued", "ValidFrom", "ValidTo") VALUES
+  (1, 1, '2026-01-05 09:10:00', NULL,       NULL),        -- Admin: HQ, always
+  (2, 1, '2026-01-05 09:10:00', NULL,       NULL),        -- Admin: Warehouse, always
+  (1, 2, '2026-02-10 09:10:00', '08:00:00', '18:00:00'),  -- Employee: HQ, business hours
+  (2, 3, '2026-03-01 09:10:00', '07:00:00', '17:00:00'),  -- Contractor: Warehouse, daytime
+  (1, 4, '2026-03-15 09:10:00', '18:00:00', '23:59:59'),  -- Janitorial: HQ, evenings
+  (2, 4, '2026-03-15 09:10:00', '18:00:00', '23:59:59');  -- Janitorial: Warehouse, evenings
 
--- ---------------------------------------------------------------- Users
-INSERT INTO `Users` (`UserId`, `Name`, `DateIssued`) VALUES
-  (1,  'Helen Okafor',    '2022-07-01 09:00:00'),   -- registrar
-  (2,  'Walter Greene',   '2023-01-09 08:30:00'),   -- facilities manager
-  (3,  'Marcus Lindgren', '2023-08-14 10:00:00'),   -- professor
-  (4,  'Priya Raman',     '2024-08-12 10:15:00'),   -- professor
-  (5,  'Tomás Alvarez',   '2025-01-13 09:45:00'),   -- professor
-  (6,  'Omar Haddad',     '2026-08-24 11:00:00'),   -- grad student + teaching assistant
-  (7,  'Sofia Rossi',     '2024-08-26 12:00:00'),
-  (8,  'Ethan Walker',    '2025-08-25 12:10:00'),
-  (9,  'Aaliyah Brooks',  '2026-08-24 12:20:00'),
-  (10, 'Noah Kim',        '2026-08-24 12:25:00'),
-  (11, 'Maya Patel',      '2023-08-28 12:30:00'),   -- senior doing thesis research
-  (12, 'Liam O''Connor',  '2026-09-15 14:05:00');   -- transfer student
+-- Exception layer: role -> single door
+INSERT INTO "DoorXRole" ("RoleId", "DoorId", "Allowed", "DateIssued", "ValidFrom", "ValidTo") VALUES
+  (2, 3, TRUE,  '2026-02-10 09:15:00', '09:00:00', '17:00:00'),  -- Employee may use the Lab
+  (2, 2, FALSE, '2026-02-10 09:15:00', NULL,       NULL),        -- Employee denied Server Room
+  (3, 6, FALSE, '2026-03-01 09:15:00', NULL,       NULL),        -- Contractor denied Warehouse Cage
+  (4, 2, FALSE, '2026-03-15 09:15:00', NULL,       NULL);        -- Janitorial denied Server Room
 
--- ---------------------------------------------------------------- Roles
-INSERT INTO `Roles` (`RoleId`, `description`) VALUES
-  (1, 'Administrator'),
-  (2, 'Faculty'),
-  (3, 'Student');
+-- Exception layer: user -> single door
+INSERT INTO "UserXDoor" ("UserId", "DoorId", "Allowed", "DateIssued", "ValidFrom", "ValidTo") VALUES
+  (2, 2, TRUE,  '2026-05-01 10:00:00', NULL,       NULL),        -- Bob granted Server Room
+  (3, 1, TRUE,  '2026-03-01 09:20:00', '08:00:00', '17:00:00'),  -- Carol granted HQ front door
+  (5, 3, FALSE, '2026-09-01 10:00:00', NULL,       NULL);        -- Eve revoked from Lab
 
--- ----------------------------------------------------------- Facilities
-INSERT INTO `Facilities` (`FacilityId`, `Name`) VALUES
-  (1, 'Main Hall'),
-  (2, 'Science Building'),
-  (3, 'Library'),
-  (4, 'Athletic Center');
+-- ------------------------------------------------------------ dashboard app
+-- Door access attempts (Result: TRUE = granted)
+INSERT INTO "Logs" ("DoorId", "UserId", "Date", "Result") VALUES
+  (1, 1, '2026-10-19 08:02:11', TRUE),
+  (1, 2, '2026-10-19 08:15:40', TRUE),
+  (1, 5, '2026-10-19 08:31:05', TRUE),
+  (3, 2, '2026-10-19 09:10:22', TRUE),
+  (3, 5, '2026-10-19 09:12:57', FALSE),   -- Eve revoked from Lab
+  (2, 2, '2026-10-19 10:03:18', TRUE),    -- Bob's Server Room exception
+  (2, 5, '2026-10-19 10:20:44', FALSE),
+  (4, 3, '2026-10-19 07:05:30', TRUE),
+  (6, 3, '2026-10-19 07:42:09', FALSE),   -- Contractor denied Cage
+  (5, 1, '2026-10-19 11:00:00', TRUE),
+  (1, 6, '2026-10-19 09:30:12', FALSE),   -- Frank has no roles
+  (1, 4, '2026-10-18 18:45:03', TRUE),
+  (2, 4, '2026-10-18 19:10:51', FALSE);   -- Janitorial denied Server Room
 
--- ---------------------------------------------------------------- Doors
--- Name is optional (nullable); door 10 is left unnamed on purpose.
-INSERT INTO `Doors` (`DoorId`, `FacilityId`, `Name`, `ExpectedState`) VALUES
-  (1,  1, 'Front Entrance',      1),   -- Main Hall
-  (2,  1, 'Registrar''s Office', 1),
-  (3,  1, 'Classroom 101',       0),
-  (4,  2, 'Main Entrance',       1),   -- Science Building
-  (5,  2, 'Chemistry Lab',       1),
-  (6,  2, 'Physics Lab',         1),
-  (7,  3, 'Main Entrance',       0),   -- Library
-  (8,  3, 'Special Collections', 1),
-  (9,  4, 'Gym Entrance',        0),   -- Athletic Center
-  (10, 4, NULL,                  1);   -- (equipment room, unnamed)
- 
-
-
--- ----------------------------------------------------------- UserXRole
-INSERT INTO `UserXRole` (`UserId`, `UserRoleId`, `DateIssued`) VALUES
-  (1,  1, '2022-07-01 09:00:00'),
-  (2,  1, '2023-01-09 08:30:00'),
-  (3,  2, '2023-08-14 10:00:00'),
-  (4,  2, '2024-08-12 10:15:00'),
-  (5,  2, '2025-01-13 09:45:00'),
-  (6,  3, '2026-08-24 11:00:00'),
-  (6,  2, '2026-09-01 09:00:00'),
-  (7,  3, '2024-08-26 12:00:00'),
-  (8,  3, '2025-08-25 12:10:00'),
-  (9,  3, '2026-08-24 12:20:00'),
-  (10, 3, '2026-08-24 12:25:00'),
-  (11, 3, '2023-08-28 12:30:00'),
-  (12, 3, '2026-09-15 14:05:00');
-
--- ------------------------------------------------------- FacilityXRole
--- Which roles can get into which building, and when that grant is valid.
-INSERT INTO `FacilityXRole` (`FacilityId`, `RoleId`, `DateIssued`, `ValidRange`) VALUES
-  (1, 1, '2022-07-01 00:00:00', NULL),
-  (1, 2, '2023-01-01 00:00:00', NULL),
-  (1, 3, '2026-08-17 00:00:00', '2026-08-24/2026-12-18'),
-  (2, 1, '2022-07-01 00:00:00', NULL),
-  (2, 2, '2023-01-01 00:00:00', NULL),
-  (2, 3, '2026-01-05 00:00:00', '2026-01-12/2026-05-15'),   -- spring term, expired
-  (3, 1, '2022-07-01 00:00:00', NULL),
-  (3, 2, '2023-01-01 00:00:00', NULL),
-  (3, 3, '2023-01-01 00:00:00', NULL),
-  (4, 1, '2022-07-01 00:00:00', NULL),
-  (4, 2, '2023-01-01 00:00:00', NULL),
-  (4, 3, '2026-08-17 00:00:00', '2026-08-24/2026-12-18');
-
--- ------------------------------------------------------------ DoorXRole
--- Exceptions: a role gets (or loses) access to one specific door.
-INSERT INTO `DoorXRole` (`RoleId`, `DoorId`, `Allowed`, `DateIssued`, `ValidRange`) VALUES
-  (2, 2, 0, '2023-01-01 00:00:00', NULL),                     -- Faculty: no registrar's office
-  (3, 2, 0, '2023-01-01 00:00:00', NULL),                     -- Students: no registrar's office
-  (3, 4, 1, '2026-08-17 00:00:00', '2026-08-24/2026-12-18'),  -- Students: science entrance this term
-  (3, 8, 0, '2023-01-01 00:00:00', NULL),                     -- Students: no archives by default
-  (3, 10, 0, '2023-01-01 00:00:00', NULL);                    -- Students: no equipment room
-
--- ------------------------------------------------------------ UserXDoor
--- Exceptions: one user gets (or loses) access to one specific door.
-INSERT INTO `UserXDoor` (`UserId`, `DoorId`, `Allowed`, `DateIssued`, `ValidRange`) VALUES
-  (7,  5, 1, '2026-08-24 09:00:00', '2026-08-24/2026-12-18'),  -- Sofia: enrolled in chem lab
-  (8,  5, 1, '2026-08-24 09:00:00', '2026-08-24/2026-12-18'),  -- Ethan: enrolled in chem lab
-  (10, 5, 0, '2026-10-12 15:00:00', NULL),                     -- Noah: lab safety hold
-  (11, 8, 1, '2026-10-01 10:00:00', '2026-10-01/2026-11-30');  -- Maya: thesis research in archives
-
--- ----------------------------------------------------------------- Logs
-INSERT INTO `Logs` (`DoorId`, `UserId`, `Date`, `Result`) VALUES
-  -- Thursday 10/15
-  (1,  1,  '2026-10-15 07:45:12', 1),
-  (2,  1,  '2026-10-15 07:50:30', 1),
-  (1,  3,  '2026-10-15 08:05:44', 1),
-  (3,  3,  '2026-10-15 08:10:02', 1),
-  (1,  7,  '2026-10-15 08:40:19', 1),
-  (3,  7,  '2026-10-15 08:52:41', 1),
-  (2,  3,  '2026-10-15 09:30:08', 0),
-  (4,  8,  '2026-10-15 10:55:23', 1),
-  (5,  8,  '2026-10-15 11:02:10', 1),
-  (5,  10, '2026-10-15 11:04:47', 0),
-  (5,  4,  '2026-10-15 11:20:36', 1),
-  (7,  11, '2026-10-15 13:15:00', 1),
-  (8,  11, '2026-10-15 13:40:52', 1),
-  (8,  9,  '2026-10-15 14:05:33', 0),
-  (9,  12, '2026-10-15 16:30:28', 1),
-  -- Friday 10/16
-  (1,  2,  '2026-10-16 07:30:15', 1),
-  (2,  2,  '2026-10-16 07:42:09', 1),
-  (1,  6,  '2026-10-16 08:25:50', 1),
-  (3,  6,  '2026-10-16 08:31:12', 1),
-  (6,  5,  '2026-10-16 09:10:44', 1),
-  (6,  9,  '2026-10-16 09:20:05', 0),
-  (4,  7,  '2026-10-16 10:00:18', 1),
-  (5,  7,  '2026-10-16 10:05:29', 1),
-  (7,  9,  '2026-10-16 15:12:36', 1),
-  (9,  10, '2026-10-16 17:45:01', 1),
-  -- Saturday 10/17
-  (7,  8,  '2026-10-17 10:20:14', 1),
-  (7,  12, '2026-10-17 11:05:48', 1),
-  (8,  11, '2026-10-17 11:50:09', 1),
-  (9,  10, '2026-10-17 14:30:40', 1),
-  (10, 12, '2026-10-17 14:42:57', 0),
-  -- Sunday 10/18
-  (7,  7,  '2026-10-18 13:00:22', 1),
-  (2,  9,  '2026-10-18 13:20:00', 0),
-  (7,  4,  '2026-10-18 14:10:11', 1);
-
--- ---------------------------------------------------------- LivenessLog
--- Door 6 (physics lab) was last heard from on the 16th, so it looks offline.
-INSERT INTO `LivenessLog` (`DoorId`, `Date`, `Sent`) VALUES
-  (1,  '2026-10-18 22:00:00', 'HEARTBEAT'),
-  (1,  '2026-10-18 22:15:00', 'HEARTBEAT'),
-  (2,  '2026-10-18 22:00:00', 'HEARTBEAT'),
-  (2,  '2026-10-18 22:15:00', 'HEARTBEAT'),
-  (3,  '2026-10-18 22:00:00', 'HEARTBEAT'),
-  (3,  '2026-10-18 22:15:00', 'HEARTBEAT'),
-  (4,  '2026-10-18 22:00:00', 'HEARTBEAT'),
-  (4,  '2026-10-18 22:15:00', 'HEARTBEAT'),
-  (5,  '2026-10-18 22:00:00', 'HEARTBEAT'),
-  (5,  '2026-10-18 22:15:00', 'HEARTBEAT'),
-  (6,  '2026-10-16 03:10:00', 'HEARTBEAT'),
-  (7,  '2026-10-18 22:00:00', 'HEARTBEAT'),
-  (7,  '2026-10-18 22:15:00', 'HEARTBEAT'),
-  (8,  '2026-10-18 22:00:00', 'HEARTBEAT'),
-  (9,  '2026-10-18 22:00:00', 'HEARTBEAT'),
-  (9,  '2026-10-18 22:15:00', 'HEARTBEAT'),
-  (10, '2026-10-18 22:00:00', 'HEARTBEAT'),
-  (10, '2026-10-18 22:15:00', 'HEARTBEAT');
+-- Door heartbeat messages
+INSERT INTO "LivenessLog" ("DoorId", "Date", "Sent") VALUES
+  (1, '2026-10-19 11:00:00', 'PING'),
+  (1, '2026-10-19 11:05:00', 'PING'),
+  (2, '2026-10-19 11:00:00', 'PING'),
+  (3, '2026-10-19 11:00:00', 'PING'),
+  (4, '2026-10-19 11:00:00', 'PING'),
+  (5, '2026-10-19 11:00:00', 'PING'),
+  (6, '2026-10-19 10:00:00', 'PING');   -- Cage has gone quiet since 10:00
 
 COMMIT;
