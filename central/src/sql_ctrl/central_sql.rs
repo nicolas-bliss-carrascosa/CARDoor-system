@@ -2,7 +2,7 @@ use sqlite;
 use std::path::Path;
 use std::fs;
 
-fn main() {
+pub fn main() {
     let db_path = Path::new("./database.db");
     let init_path = Path::new("./CARDatabase.sql");
     
