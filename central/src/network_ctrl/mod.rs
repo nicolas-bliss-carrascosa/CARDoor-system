@@ -1,23 +1,20 @@
 pub mod tcp_int;
 mod tcp_ctrl;
 
-<<<<<<< Updated upstream
 struct ScanData {
-    usize doorId,
-    usize userId,
+    doorId: usize,
+    userId: usize,
 }
 
 struct ScanResponse {
-    bool open,
+    open: bool,
 }
 
 struct PingData {
-    usize doorId,
+    doorId: usize,
 }
 
 struct PingResponse {
-    bool open,
+    open: bool,
     //TODO: other things we want to be able to update
 }
-=======
->>>>>>> Stashed changes
