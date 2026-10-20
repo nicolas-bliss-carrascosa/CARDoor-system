@@ -11,3 +11,7 @@ fn main() {
     let res = connection.execute(init_database_query);
     println!("{:?}", res);
 }
+
+pub fn hello() {
+    print!("hello!")
+}
