@@ -1,0 +1,1 @@
+INSERT INTO 'Logs' VALUES
