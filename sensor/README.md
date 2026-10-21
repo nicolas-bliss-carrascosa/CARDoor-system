@@ -13,5 +13,11 @@ cargo build
 
 Step 2:
 '''
-storage send target/thumbv7em-none-eabihf/release/sensor.fap /{Location of flipperzero}/apps/Examples/sensor.fap
+sudo storage send target/thumbv7em-none-eabihf/release/sensor.fap /ext/apps/Examples/sensor.fap
+'''
+
+
+To Build and run automatically
+'''
+sudo cargo watch -s 'cargo build --release && run-fap target/thumbv7em-none-eabihf/release/sensor.fap'
 '''

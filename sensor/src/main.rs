@@ -3,6 +3,8 @@
 #![no_std]
 
 // Required for panic handler
+extern crate alloc;
+extern crate flipperzero_alloc;
 extern crate flipperzero_rt;
 
 use core::ffi::CStr;
@@ -23,6 +25,6 @@ entry!(main);
 // Entry point
 fn main(_args: Option<&CStr>) -> i32 {
     println!("Hello, Rust!");
-
+    flipperzero::dialogs::alert("Text");
     0
 }
