@@ -20,6 +20,8 @@
           gcc
           pkg-config
           rustup
+          udev
+          cargo-watch
           # We very specifically dont want cargo or rustc because they cause problems with compiling to the flipper zero target
         ];
         

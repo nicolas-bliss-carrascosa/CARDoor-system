@@ -17,6 +17,7 @@ bench = false
 test = false
 
 [dependencies]
-flipperzero = { version = "0.16.0" }
+flipperzero = { version = "0.16.0", feature = "alloc" }
 flipperzero-sys = { version = "0.16.0" }
 flipperzero-rt = { version = "0.16.0" }
+flipperzero-alloc = "0.16.0"
