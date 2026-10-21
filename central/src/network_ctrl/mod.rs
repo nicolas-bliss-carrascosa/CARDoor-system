@@ -1,20 +1,19 @@
-pub mod tcp_int;
-mod tcp_ctrl;
+use std::{net::SocketAddr, sync::mpsc::Sender};
 
-struct ScanData {
-    doorId: usize,
-    userId: usize,
+pub mod tcp_ctrl;
+
+pub enum Request {
+    Ping { door_id: String },
+    Scan { door_id: String, user_id: String }
 }
 
-struct ScanResponse {
-    open: bool,
+pub enum Response {
+    Granted,
+    Denied
 }
 
-struct PingData {
-    doorId: usize,
-}
-
-struct PingResponse {
-    open: bool,
-    //TODO: other things we want to be able to update
+pub struct NetEvent{
+    pub peer: SocketAddr,
+    pub request: Request,
+    pub reply: Sender<Response>
 }
