@@ -16,15 +16,18 @@
       devShells.${system}.default = pkgs.mkShell {
         buildInputs = with pkgs; [
           sqlite
-          cargo
-          rustc
           rust-analyzer
           gcc
           pkg-config
           rustup
-          # the packages we want
+          # We very specifically dont want cargo or rustc because they cause problems with compiling to the flipper zero target
         ];
-        shellHook = "";
+        
+        shellHook = ''
+          # Prevent Nix from forcing its host RUSTC compiler onto rustup
+          unset RUSTC
+          export PATH="$HOME/.cargo/bin:$PATH"
+        '';
       };
     };
 }
