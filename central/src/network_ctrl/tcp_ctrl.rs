@@ -48,7 +48,7 @@ pub fn start(addr: &str) -> Result<NetworkHandle, Error> {
     // without this, you cannot read the next call before resolving the previous call.
     listener.set_nonblocking(true)?;
 
-    let (tx, rx) = mpsc::channel::<NetEvent>();
+    let (transmitter, reciever) = mpsc::channel::<NetEvent>();
     let shutdown = Arc::new(AtomicBool::new(false));
     let active = Arc::new(AtomicUsize::new(0));
 
@@ -57,12 +57,12 @@ pub fn start(addr: &str) -> Result<NetworkHandle, Error> {
         let shutdown = Arc::clone(&shutdown);
         thread::Builder::new()
             .name("net-accept".into())
-            .spawn(move || accept_loop(listener, tx, shutdown, active))?
+            .spawn(move || accept_loop(listener, transmitter, shutdown, active))?
     };
 
     // Return a nice struct that compiles all threads
     Ok(NetworkHandle {
-        events: rx,
+        events: reciever,
         shutdown: shutdown,
         acceptor: Some(acceptor),
     })
@@ -73,7 +73,7 @@ pub fn start(addr: &str) -> Result<NetworkHandle, Error> {
  */
 fn accept_loop(
     listener: TcpListener,
-    tx: Sender<NetEvent>,
+    transmitter: Sender<NetEvent>,
     shutdown: Arc<AtomicBool>,
     active: Arc<AtomicUsize>,
 ) {
@@ -89,14 +89,14 @@ fn accept_loop(
                 }
                 active.fetch_add(1, Ordering::Relaxed);
 
-                let tx_t = tx.clone();
+                let transmitter_t = transmitter.clone();
                 let shutdown_t = Arc::clone(&shutdown);
                 let active_t = Arc::clone(&active);
 
                 match thread::Builder::new()
                     .name(format!("net-client-{peer}"))
                     .spawn(move || {
-                        if let Err(e) = serve_client(stream, peer, tx_t, &shutdown_t) {
+                        if let Err(e) = serve_client(stream, peer, transmitter_t, &shutdown_t) {
                             eprintln!("Client {peer} ended: {e}");
                         }
                         active_t.fetch_sub(1, Ordering::Relaxed);
@@ -129,7 +129,7 @@ fn accept_loop(
 fn serve_client(
     stream: TcpStream,
     peer: SocketAddr,
-    tx: Sender<NetEvent>,
+    transmitter: Sender<NetEvent>,
     shutdown: &AtomicBool,
 ) -> Result<(), Error> {
     stream.set_nonblocking(false)?;
@@ -178,7 +178,7 @@ fn serve_client(
         buf.clear();
 
         let reply_line = match parse_line(&line) {
-            Ok(request) => handle_request(&tx, peer, request),
+            Ok(request) => handle_request(&transmitter, peer, request),
             Err(msg) => {
                 eprintln!("Error parsing the request line. {msg}");
                 format!("ERR {msg}\n")
@@ -225,13 +225,13 @@ fn authenticate<R: Read, W: Write>(
     Ok(true)
 }
 
-fn handle_request(tx: &Sender<NetEvent>, peer: SocketAddr, request: Request) -> String {
-    let (reply_tx, reply_rx) = channel();
-    if tx
+fn handle_request(transmitter: &Sender<NetEvent>, peer: SocketAddr, request: Request) -> String {
+    let (reply_transmitter, reply_reciever) = channel();
+    if transmitter
         .send(NetEvent {
             peer,
             request,
-            reply: reply_tx,
+            reply: reply_transmitter,
         })
         .is_err()
     {
@@ -240,7 +240,7 @@ fn handle_request(tx: &Sender<NetEvent>, peer: SocketAddr, request: Request) -> 
         );
         return "ERR system failed to respond\n".into();
     }
-    match reply_rx.recv_timeout(REPLY_TIMEOUT) {
+    match reply_reciever.recv_timeout(REPLY_TIMEOUT) {
         Ok(Response::Granted) => "GRANTED\n".into(),
         Ok(Response::Denied) => "DENIED\n".into(),
         Err(RecvTimeoutError::Timeout) => {

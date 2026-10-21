@@ -32,7 +32,9 @@ CREATE TABLE `FacilityXRole` (
   `RoleId` integer,
   `FacilityId` integer,
   `DateIssued` timestamp,
-  `ValidRange` timerange NOT NULL, -- need reasonably good thing here
+  -- TODO: if you fuck this up the computer kills you
+  `ValidRangeStart` timestamp NOT NULL, 
+  `ValidRangeEnd` timestamp NOT NULL, 
   PRIMARY KEY (`FacilityId`, `RoleId`)
 );
 
