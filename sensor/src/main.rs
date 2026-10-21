@@ -3,9 +3,9 @@
 #![no_std]
 
 // Required for panic handler
-extern crate alloc;
 extern crate flipperzero_alloc;
 extern crate flipperzero_rt;
+extern crate alloc;
 
 use core::ffi::CStr;
 use flipperzero::println;
