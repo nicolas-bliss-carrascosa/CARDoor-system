@@ -1,10 +1,12 @@
 mod network_ctrl;
+mod sql_ctrl;
 
 use std::{sync::mpsc::{Sender, TryRecvError}, thread, time::Duration};
 
 use network_ctrl::tcp_ctrl;
 
 use crate::network_ctrl::{Request, Response};
+
 
 /*
      * Okay, so the following are some weird fantasies I have designed to *test* my code... I know, lame
@@ -34,13 +36,13 @@ fn main() {
             match net.events.try_recv() {
                 Ok(ev) => {
                     match ev.request {
-                        Request::Ping { door_id: door } => {
-                            println!("{} sent a PING from door {door}", ev.peer);
+                        Request::Ping(ping_data) => {
+                            println!("{} sent a PING from door {}", ev.peer, ping_data.door_id);
                             let _ = ev.reply.send(Response::Denied); // Now if the database has set the door to open, this would be Response::Granted instead
                         }
-                        Request::Scan { door_id: door, user_id: user } => {
-                            println!("{} sent a SCAN from door {door} by user {user}", ev.peer);
-                            match user.as_str() {
+                        Request::Scan(scan_data) => {
+                            println!("{} sent a SCAN from door {} by user {}", ev.peer, scan_data.door_id, scan_data.user_id);
+                            match scan_data.user_id.as_str() {
                                 "alice" => {let _ = ev.reply.send(Response::Granted); }
                                 // We make this little guy wait :(
                                 "dna" => stalled.push(ev.reply),

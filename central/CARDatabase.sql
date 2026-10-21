@@ -17,9 +17,9 @@ CREATE TABLE `Facilities` (
 
 CREATE TABLE `UserXRole` (
   `UserId` integer,
-  `UserRoleId` integer,
+  `RoleId` integer,
   `DateIssued` timestamp, 
-  PRIMARY KEY (`UserId`, `UserRoleId`)
+  PRIMARY KEY (`UserId`, `RoleId`)
 );
 
 CREATE TABLE `Doors` (
@@ -32,7 +32,7 @@ CREATE TABLE `FacilityXRole` (
   `RoleId` integer,
   `FacilityId` integer,
   `DateIssued` timestamp,
-  `ValidRange` timerange,
+  `ValidRange` timerange NOT NULL, -- need reasonably good thing here
   PRIMARY KEY (`FacilityId`, `RoleId`)
 );
 

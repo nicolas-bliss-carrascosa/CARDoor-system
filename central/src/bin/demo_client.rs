@@ -22,9 +22,11 @@ impl Client {
         s.set_read_timeout(Some(Duration::from_secs(5))).unwrap();
         Client { w: s.try_clone().unwrap(), r: BufReader::new(s) }
     }
+
     fn send(&mut self, raw: &str) {
         self.w.write_all(raw.as_bytes()).unwrap();
     }
+
     fn recv(&mut self) -> String {
         let mut line = String::new();
         match self.r.read_line(&mut line) {
@@ -33,6 +35,7 @@ impl Client {
             Err(e) => format!("<error: {e}>"),
         }
     }
+    
     fn ask(&mut self, line: &str) -> String {
         self.send(&format!("{line}\n"));
         self.recv()

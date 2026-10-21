@@ -3,8 +3,17 @@ use std::{net::SocketAddr, sync::mpsc::Sender};
 pub mod tcp_ctrl;
 
 pub enum Request {
-    Ping { door_id: String },
-    Scan { door_id: String, user_id: String }
+    Ping(PingData),
+    Scan(ScanData)
+}
+
+pub struct PingData {
+    pub door_id: String,
+}
+
+pub struct ScanData {
+    pub door_id: String,
+    pub user_id: String,
 }
 
 pub enum Response {
