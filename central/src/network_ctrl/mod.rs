@@ -7,10 +7,12 @@ pub enum Request {
     Scan(ScanData)
 }
 
+#[derive(Debug, Clone)]
 pub struct PingData {
     pub door_id: String,
 }
 
+#[derive(Debug, Clone)]
 pub struct ScanData {
     pub door_id: String,
     pub user_id: String,

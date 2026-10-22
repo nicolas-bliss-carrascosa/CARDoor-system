@@ -5,7 +5,7 @@ use std::{sync::mpsc::{Sender, TryRecvError}, thread, time::Duration};
 
 use network_ctrl::tcp_ctrl;
 
-use crate::network_ctrl::{Request, Response};
+use crate::{network_ctrl::{Request, Response}, sql_ctrl::{Empty, Central}};
 
 
 /*
@@ -28,6 +28,10 @@ fn main() {
     };
     println!("Listenning!!");
 
+    let database = Central::<Empty>::new();
+    let database = database.connect();
+    let mut database = database.prepare_queries();
+    
     // A vector for the senders I WILL NOT answer. This is to test the timeout function :)
     let mut stalled: Vec<Sender<Response>> = Vec::new();
 
@@ -38,7 +42,10 @@ fn main() {
                     match ev.request {
                         Request::Ping(ping_data) => {
                             println!("{} sent a PING from door {}", ev.peer, ping_data.door_id);
-                            let _ = ev.reply.send(Response::Denied); // Now if the database has set the door to open, this would be Response::Granted instead
+                            let _ = ev.reply.send(match database.check_open(ping_data) {
+                                true => Response::Granted,
+                                false => Response::Denied
+                            });
                         }
                         Request::Scan(scan_data) => {
                             println!("{} sent a SCAN from door {} by user {}", ev.peer, scan_data.door_id, scan_data.user_id);

@@ -19,6 +19,7 @@
           cargo
           rustc
           rust-analyzer
+          rustfmt
           # the packages we want
         ];
         shellHook = "";

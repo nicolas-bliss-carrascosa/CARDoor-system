@@ -193,13 +193,13 @@ fn serve_client(
 /**
  * Parse the incoming message and return a command enum
  */
-fn parse_line(line: &str) -> Result<Request, &'static str> {
+fn parse_line(line: &str) -> Result<Request, String> {
     let mut parts = line.splitn(3, ' ');
     match (parts.next(), parts.next(), parts.next()) {
         (Some("PING"), Some(d_id), None) if !d_id.trim().is_empty() => Ok(Request::Ping(PingData {
             door_id: d_id.trim().to_string(),
         })),
-        (Some("PING"), _, _) => Err("PING requires only a door id"),
+        (Some("PING"), _, _) => Err("PING requires only a door id".to_string()),
         (Some("SCAN"), Some(d_id), Some(u_id))
             if !d_id.trim().is_empty() && !u_id.trim().is_empty() =>
         {
@@ -208,8 +208,8 @@ fn parse_line(line: &str) -> Result<Request, &'static str> {
                 user_id: u_id.trim().to_string(),
             }))
         }
-        (Some("SCAN"), _, _) => Err("SCAN requires a door id and a user id"),
-        _ => Err("unknown command"),
+        (Some("SCAN"), _, _) => Err("SCAN requires a door id and a user id".to_string()),
+        _ => Err("unknown command".to_string()),
     }
 }
 
