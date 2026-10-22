@@ -117,47 +117,50 @@ fn main(_args: Option<&CStr>) -> i32 {
             core::ptr::null_mut(),
         );
 
-        // 6. Polling loop with UI active
+        // Polling loop
         while !READ_SUCCESS.load(Ordering::SeqCst) && !SHOULD_EXIT.load(Ordering::SeqCst) {
             sys::furi_delay_ms(50);
         }
 
-        // 7. Stop worker hardware
+        // stop worker hardware
         sys::lfrfid_worker_stop(worker);
         sys::lfrfid_worker_stop_thread(worker);
-
-        // 8. Extract payload if read succeeded
         let mut display_text = String::new();
         let was_scanned = READ_SUCCESS.load(Ordering::SeqCst);
 
-        if was_scanned {
+       if was_scanned {
             display_text.push_str("Tag Detected!\n");
             for i in 0..PROTOCOL_COUNT {
                 let data_size = sys::protocol_dict_get_data_size(dict, i);
                 if data_size > 0 {
-                    let name_ptr = sys::protocol_dict_get_name(dict, i);
-                    if !name_ptr.is_null() {
-                        let name = CStr::from_ptr(name_ptr).to_str().unwrap_or("Unknown");
+                    let mut data_buf = [0u8; 32];
+                    sys::protocol_dict_get_data(
+                        dict,
+                        i,
+                        data_buf.as_mut_ptr(),
+                        data_buf.len(),
+                    );
 
-                        let mut data_buf = [0u8; 32];
-                        sys::protocol_dict_get_data(
-                            dict,
-                            i,
-                            data_buf.as_mut_ptr(),
-                            data_buf.len(),
-                        );
+                    // fix an issue where a protocol can give us no data and end the search.
+                    let is_populated = data_buf.iter().any(|x| *x != 0u8);
+                    if is_populated && data_buf[..data_size].iter().any(|&b| b != 0) {
+                        let name_ptr = sys::protocol_dict_get_name(dict, i);
+                        let name = if !name_ptr.is_null() {
+                            CStr::from_ptr(name_ptr).to_str().unwrap_or("Unknown")
+                        } else {
+                            "Unknown"
+                        };
 
                         display_text.push_str(&format!("Proto: {}\nUID: ", name));
                         for byte in &data_buf[..data_size] {
                             display_text.push_str(&format!("{:02X}", byte));
                         }
                         break;
-                    }
                 }
             }
         }
 
-        // Clean up C workers
+        // Clean up workers
         sys::lfrfid_worker_free(worker);
         sys::protocol_dict_free(dict);
 
