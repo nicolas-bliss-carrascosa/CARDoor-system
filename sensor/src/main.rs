@@ -156,6 +156,7 @@ fn main(_args: Option<&CStr>) -> i32 {
                             display_text.push_str(&format!("{:02X}", byte));
                         }
                         break;
+                    }
                 }
             }
         }
