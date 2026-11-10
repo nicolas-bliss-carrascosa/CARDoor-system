@@ -1,5 +1,5 @@
 from django.db import models
-from users.models import User, Role
+from users.models import Users, Roles
 class ValidRangeMixin(models.Model):
  
     valid_from = models.TimeField(null=True, blank=True, db_column="ValidFrom")
@@ -9,7 +9,7 @@ class ValidRangeMixin(models.Model):
         abstract = True
  
 
-class Facility(models.Model):
+class Facilities(models.Model):
     id = models.IntegerField(primary_key=True, db_column="FacilityId")
     name = models.CharField(max_length=255, null=True, blank=True, db_column="Name")
  
@@ -21,10 +21,10 @@ class Facility(models.Model):
         return self.name or f"Facility {self.pk}"
  
  
-class Door(models.Model):
+class Doors(models.Model):
     id = models.IntegerField(primary_key=True, db_column="DoorId")
     facility = models.ForeignKey(
-        Facility,
+        Facilities,
         on_delete=models.CASCADE,
         db_column="FacilityId",
         related_name="doors",
@@ -41,13 +41,13 @@ class Door(models.Model):
 
 class FacilityXRole(ValidRangeMixin):
     facility = models.ForeignKey(
-        Facility,
+        Facilities,
         on_delete=models.CASCADE,
         db_column="FacilityId",
         related_name="facility_roles",
     )
     role = models.ForeignKey(
-        Role,
+        Roles,
         on_delete=models.CASCADE,
         db_column="RoleId",
         related_name="role_facilities",
@@ -66,10 +66,10 @@ class FacilityXRole(ValidRangeMixin):
 # exception layer: let a role access one particular door
 class DoorXRole(ValidRangeMixin):
     role = models.ForeignKey(
-        Role, on_delete=models.CASCADE, db_column="RoleId", related_name="door_grants"
+        Roles, on_delete=models.CASCADE, db_column="RoleId", related_name="door_grants"
     )
     door = models.ForeignKey(
-        Door, on_delete=models.CASCADE, db_column="DoorId", related_name="role_grants"
+        Doors, on_delete=models.CASCADE, db_column="DoorId", related_name="role_grants"
     )
     allowed = models.BooleanField(null=True, db_column="Allowed")
     date_issued = models.DateTimeField(null=True, blank=True, db_column="DateIssued")
@@ -84,10 +84,10 @@ class DoorXRole(ValidRangeMixin):
 # exception layer: let a user access one particular door
 class UserXDoor(ValidRangeMixin):
     user = models.ForeignKey(
-        User, on_delete=models.CASCADE, db_column="UserId", related_name="door_grants"
+        Users, on_delete=models.CASCADE, db_column="UserId", related_name="door_grants"
     )
     door = models.ForeignKey(
-        Door, on_delete=models.CASCADE, db_column="DoorId", related_name="user_grants"
+        Doors, on_delete=models.CASCADE, db_column="DoorId", related_name="user_grants"
     )
     allowed = models.BooleanField(null=True, db_column="Allowed")
     date_issued = models.DateTimeField(null=True, blank=True, db_column="DateIssued")

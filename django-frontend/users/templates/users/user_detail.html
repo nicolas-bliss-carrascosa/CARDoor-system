@@ -20,7 +20,7 @@
         <span class="badge text-bg-secondary">{{ user.id }}</span>
       </div>
       <div class="text-end mt-3 mt-md-0">
-        <span class="badge text-bg-primary me-1">{{ user.roles|length }} role{{ user.roles|length|pluralize }}</span>
+        <span class="badge text-bg-primary me-1">{{ roles|length }} role{{ roles|length|pluralize }}</span>
         <span class="badge text-bg-info">{{ user.door_overrides|length }} door exception{{ user.door_overrides|length|pluralize }}</span>
       </div>
     </div>
@@ -36,16 +36,16 @@
         </div>
 
         <ul class="list-group list-group-flush">
-          {% for role in user.roles %}
+          {% for role in includedRoles %}
             <li class="list-group-item d-flex justify-content-between align-items-center">
-              <span>{{ role.name }}</span>
+              <span>{{ role.description }}</span>
               <button type="button"
                       class="btn btn-sm btn-outline-danger"
                       data-bs-toggle="modal"
                       data-bs-target="#confirmRemoveModal"
                       data-item-type="role"
-                      data-item-name="{{ role.name }}"
-                      data-action="{% url 'user_remove_role' user.id role.id %}">
+                      data-item-name="{{ role.description }}"
+                     >
                 <i class="bi bi-trash"></i> Remove
               </button>
             </li>
@@ -61,8 +61,8 @@
               <label for="roleSelect" class="visually-hidden">Role</label>
               <select id="roleSelect" name="role" class="form-select" required>
                 <option value="" selected disabled>Select a role to add...</option>
-                {% for role in available_roles %}
-                  <option value="{{ role.id }}">{{ role.name }}</option>
+                {% for role in otherRoles %}
+                  <option value="{{ role.id }}">{{ role.description }}</option>
                 {% endfor %}
               </select>
             </div>
@@ -83,7 +83,7 @@
         </div>
 
         <ul class="list-group list-group-flush">
-          {% for override in user.door_overrides %}
+          {% for override in overriddenDoors %}
             <li class="list-group-item d-flex justify-content-between align-items-center">
               <div>
                 {% if override.allowed %}
@@ -91,15 +91,15 @@
                 {% else %}
                   <span class="badge text-bg-danger me-2"><i class="bi bi-x-lg"></i> Excluded</span>
                 {% endif %}
-                {{ override.door_name }}
-                <span class="text-muted small">&middot; {{ override.facility_name }}</span>
+                {{ override.name }}
+                <span class="text-muted small">&middot; {{ override.facility.name }}</span>
               </div>
               <button type="button"
                       class="btn btn-sm btn-outline-danger"
                       data-bs-toggle="modal"
                       data-bs-target="#confirmRemoveModal"
                       data-item-type="exception for"
-                      data-item-name="{{ override.door_name }}"
+                      data-item-name="{{ override.id}}"
                     >
                 <i class="bi bi-trash"></i> Remove
               </button>
@@ -116,7 +116,7 @@
               <label for="doorSelect" class="visually-hidden">Door</label>
               <select id="doorSelect" name="door" class="form-select" required>
                 <option value="" selected disabled>Select a door...</option>
-                {% regroup available_doors by facility_name as facility_groups %}
+                {% regroup otherDoors by facility.name as facility_groups %}
                 {% for facility in facility_groups %}
                   <optgroup label="{{ facility.grouper }}">
                     {% for door in facility.list %}

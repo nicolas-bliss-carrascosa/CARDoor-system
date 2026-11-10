@@ -18,12 +18,12 @@
     </div>
 
     <div class="col-6 col-md-3">
-      <label for="groupFilter" class="visually-hidden">Filter by group</label>
+      <label for="groupFilter" class="visually-hidden">Filter by role</label>
       <select id="groupFilter" class="form-select">
-        <option value="" selected>All groups</option>
-        <option value="admin">Admin</option>
-        <option value="editor">Editor</option>
-        <option value="viewer">Viewer</option>
+        <option value="" selected>All roles</option>
+        {% for role in roles %}
+        <option value="{{role.id}}">{{role.description}}</option>
+        {% endfor %}
       </select>
     </div>
 
@@ -34,7 +34,7 @@
         <option value="name-desc">Name (Z-A)</option>
         <option value="id-asc">Id (low to high)</option>
         <option value="id-desc">Id (high to low)</option>
-        <option value="group-asc">Group (A-Z)</option>
+        <option value="group-asc">Role (A-Z)</option>
       </select>
     </div>
   </form>
@@ -46,25 +46,25 @@
           <tr>
             <th scope="col">Name</th>
             <th scope="col">Id</th>
-            <th scope="col">Group</th>
+            <th scope="col">Role</th>
           </tr>
         </thead>
         <tbody>
-          {% for id, user in users.items %}
+          {% for user in users %}
           <tr data-user
               data-name="{{ user.name|lower }}"
-              data-id="{{ id|lower }}"
-              data-groups="{{ user.role|join:'|'|lower }}"
-              data-group="{{ user.role|first|lower }}">
+              data-id="{{ user.id|lower }}"
+data-roles="{% for r in user.role_list %}{{ r.id }}{% if not forloop.last %}|{% endif %}{% endfor %}"
+data-primary-role="{% if user.role_list %}{{ user.role_list.0.id }}{% endif %}">
             <td>
-              <a href="{% url 'user_detail' id=id %}" class="text-decoration-none fw-bold">
+              <a href="{% url 'user_detail' id=user.id %}" class="text-decoration-none fw-bold">
                 {{ user.name }}
               </a>
             </td>
-            <td>{{ id }}</td>
+            <td>{{ user.id }}</td>
             <td>
-              {% for group in user.role %}
-                {{ group }}<br/>
+              {% for group in user.role_list%}
+                {{ group.description }}<br/>
               {% endfor %}
             </td>
           </tr>
@@ -92,20 +92,28 @@
   const noMatches = document.getElementById('noMatches');
   const rows = [...tbody.querySelectorAll('tr[data-user]')];
 
-  function applyFilter() {
-    const q = search.value.trim().toLowerCase();
-    const group = groupFilter.value;
-    let visible = 0;
+function applyFilter() {
+  const q = search.value.trim().toLowerCase();
+  const roleId = groupFilter.value; 
+  console.log(roleId);
+    // "" means "All roles"
+  let visible = 0;
 
-    for (const row of rows) {
-      const matchesText = !q || row.dataset.name.includes(q) || row.dataset.id.includes(q);
-      const matchesGroup = !group || row.dataset.groups.split('|').includes(group);
-      row.hidden = !(matchesText && matchesGroup);
-      if (!row.hidden) visible++;
-    }
-    noMatches.hidden = rows.length === 0 || visible > 0;
+  for (const row of rows) {
+    console.log(row);
+    const name = (row.dataset.name || '').toLowerCase();
+    const id = (row.dataset.id || '').toLowerCase();
+    const roleIds = (row.dataset.roles|| '').split('|').filter(Boolean);
+    
+    const matchesText = !q || name.includes(q) || id.includes(q);
+    const matchesRole = !roleId || roleIds.includes(roleId);
+
+    row.hidden = !(matchesText && matchesRole);
+    if (!row.hidden) visible++;
   }
 
+  noMatches.hidden = rows.length === 0 || visible > 0;
+}
   function applySort() {
     const [key, dir] = sortBy.value.split('-');
     const sorted = [...rows].sort((a, b) => {

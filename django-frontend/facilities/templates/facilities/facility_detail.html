@@ -34,25 +34,25 @@
     <div class="col-lg-6">
       <div class="card shadow-sm h-100">
         <div class="card-header bg-white">
-          <h2 class="h5 mb-0"><i class="bi bi-people-fill me-2"></i>Groups with Access</h2>
+          <h2 class="h5 mb-0"><i class="bi bi-people-fill me-2"></i>Roles with Access</h2>
         </div>
 
         <ul class="list-group list-group-flush">
-          {% for group in facility.groups %}
+          {% for role in roles %}
             <li class="list-group-item d-flex justify-content-between align-items-center">
-              <span>{{ group.name }}</span>
+              <span>{{ role.description }}</span>
               <button type="button"
                       class="btn btn-sm btn-outline-danger"
                       data-bs-toggle="modal"
                       data-bs-target="#confirmRemoveModal"
                       data-item-type="group"
-                      data-item-name="{{ group.name }}"
+                      data-item-name="{{ role.description }}"
                       >
                 <i class="bi bi-trash"></i> Remove
               </button>
             </li>
           {% empty %}
-            <li class="list-group-item text-muted fst-italic">No groups have access to this facility.</li>
+            <li class="list-group-item text-muted fst-italic">No roless have access to this facility.</li>
           {% endfor %}
         </ul>
 
@@ -63,8 +63,8 @@
               <label for="groupSelect" class="visually-hidden">Group</label>
               <select id="groupSelect" name="group" class="form-select" required>
                 <option value="" selected disabled>Select a group to add...</option>
-                {% for group in available_groups %}
-                  <option value="{{ group.id }}">{{ group.name }}</option>
+                {% for role in excluded_roles %}
+                  <option value="{{ role.id }}">{{ role.description }}</option>
                 {% endfor %}
               </select>
             </div>
@@ -84,7 +84,7 @@
         </div>
 
         <ul class="list-group list-group-flush">
-          {% for door in facility.doors%}
+          {% for door in facility.doors.all%}
             <li class="list-group-item d-flex justify-content-between align-items-center">
               <span>{{ door.name }}</span>
             <div>

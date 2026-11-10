@@ -1,6 +1,6 @@
 from django.db import models
-from facilities.models import Door
-from users.models import User
+from facilities.models import Doors
+from users.models import Users
 class AppendOnlyModel(models.Model):
     """Rows can be inserted but never updated or deleted."""
  
@@ -19,12 +19,12 @@ class AppendOnlyModel(models.Model):
  
 
 
-class Log(AppendOnlyModel):
+class Logs(AppendOnlyModel):
     door = models.ForeignKey(
-        Door, on_delete=models.CASCADE, db_column="DoorId", related_name="logs"
+        Doors, on_delete=models.CASCADE, db_column="DoorId", related_name="logs"
     )
     user = models.ForeignKey(
-        User, on_delete=models.CASCADE, db_column="UserId", related_name="logs"
+        Users, on_delete=models.CASCADE, db_column="UserId", related_name="logs"
     )
     date = models.DateTimeField(db_column="Date")
     result = models.BooleanField(null=True, db_column="Result")
@@ -40,7 +40,7 @@ class Log(AppendOnlyModel):
  
 class LivenessLog(AppendOnlyModel):
     door = models.ForeignKey(
-        Door, on_delete=models.CASCADE, db_column="DoorId", related_name="liveness_logs"
+        Doors, on_delete=models.CASCADE, db_column="DoorId", related_name="liveness_logs"
     )
     date = models.DateTimeField(db_column="Date")
     sent = models.TextField(null=True, blank=True, db_column="Sent")

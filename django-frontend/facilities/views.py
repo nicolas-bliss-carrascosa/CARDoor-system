@@ -1,66 +1,24 @@
 from django.shortcuts import render
-
+from django.db.models import Q
+from .models import Facilities, FacilityXRole
+from users.models import Roles
 # Create your views here.
-
-ALL_GROUPS = [
-    {"id": 1, "name": "Employee"},
-    {"id": 2, "name": "Security"},
-    {"id": 3, "name": "Night Staff"},
-    {"id": 4, "name": "Contractor"},
-    {"id": 5, "name": "Janitorial"},
-]
- 
-FACILITIES = {
-    1: {
-        "id": 1,
-        "name": "Headquarters",
-        "groups": [
-            {"id": 1, "name": "Employee"},
-            {"id": 2, "name": "Security"},
-            {"id": 4, "name": "Contractor"},
-        ],
-        "doors": [
-            {"id": 1, "name": "Main lobby", "allowed" : True},
-            {"id": 2, "name": "Floor 2", "allowed" : True},
-            {"id": 3, "name": "Server room", "allowed" : False},
-            {"id": 4, "name": "Executive suite", "allowed" : False},
-            {"id": 5, "name": "Loading dock", "allowed" : False},
-        ],
-    },
-    2: {
-        "id": 2,
-        "name": "Warehouse",
-        "groups": [
-            {"id": 1, "name": "Employee"},
-            {"id": 2, "name": "Security"},
-            {"id": 3, "name": "Night Staff"},
-        ],
-        "doors": [
-            {"id": 6, "name": "Front office", "allowed" : True},
-            {"id": 7, "name": "Warehouse floor", "allowed" : False},
-            {"id": 8, "name": "Loading bay", "allowed" : False},
-            {"id": 9, "name": "Cold storage", "allowed" : True},
-        ],
-    },
-    3: {
-        "id": 4,
-        "name": "Annex",
-        "groups": [],
-        "doors": [],
-    },
-}
  
  
-def available_groups(facility):
-    taken = {g["id"] for g in facility["groups"]}
-    return [g for g in ALL_GROUPS if g["id"] not in taken]
- 
+def roles(facility):
+    role_ids = FacilityXRole.objects.filter(facility=facility).values_list('role_id', flat=True)
+    included = Roles.objects.filter(id__in=role_ids)
+    excluded = Roles.objects.filter(~Q(id__in=role_ids))
+    return included, excluded
 
 def facilities(request):
-    return render(request, "facilities/facilities.html", {"facilities": FACILITIES})
+    obj = Facilities.objects.all()
+    return render(request, "facilities/facilities.html", {"facilities": obj})
 
 def facility_detail(request, id):
-    facility_data = FACILITIES.get(id)
+    facility_data = Facilities.objects.get(id=id)
     if not facility_data:
         raise Http404('Facility does not exist!')
-    return render(request, 'facilities/facility_detail.html', {"facility": facility_data})
+    included_roles, excluded_roles = roles(facility_data)
+
+    return render(request, 'facilities/facility_detail.html', {"facility": facility_data, "roles": included_roles, "excluded_roles": excluded_roles})
