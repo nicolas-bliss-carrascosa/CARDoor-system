@@ -1,4 +1,7 @@
-
+-- by default, all timestamps are seconds since unix-epoch
+-- NOTE: foreign keys are only enforced if you run `PRAGMA foreign_keys = ON;`
+-- on every connection (SQLite default is OFF).
+ 
 CREATE TABLE IF NOT EXISTS `Users` (
   `UserId` integer PRIMARY KEY,
   `Name` varchar(255),
@@ -33,29 +36,38 @@ CREATE TABLE IF NOT EXISTS `FacilityXRole` (
   `FacilityId` integer REFERENCES `Facilities` (`FacilityId`),
   `RoleId` integer REFERENCES `Roles` (`RoleId`),
   `DateIssued` timestamp,
-  `ValidRange` timerange,
   PRIMARY KEY (`FacilityId`, `RoleId`)
 );
- 
+
 -- exception layer: let a role access one particular door
 CREATE TABLE IF NOT EXISTS `DoorXRole` (
   `RoleId` integer REFERENCES `Roles` (`RoleId`),
   `DoorId` integer REFERENCES `Doors` (`DoorId`),
   `Allowed` bool,
   `DateIssued` timestamp,
-  `ValidRange` timerange,
   PRIMARY KEY (`RoleId`, `DoorId`)
 );
- 
--- exception layer: let a user access one particular door
-CREATE TABLE IF NOT EXISTS `UserXDoor` (
-  `UserId` integer REFERENCES `Users` (`UserId`),
-  `DoorId` integer REFERENCES `Doors` (`DoorId`),
-  `Allowed` bool,
-  `DateIssued` timestamp,
-  `ValidRange` timerange,
-  PRIMARY KEY (`UserId`, `DoorId`)
+
+CREATE TABLE IF NOT EXISTS `FacilityXRoleXTimeRange` (
+	`RoleId` integer REFERENCES `Roles` (`RoleId`),
+	`FacilityId` integer REFERENCES `Facilities` (`FacilityId`),
+	-- TODO: if you mess this up the computer kills you
+	-- here, the timestamps are HH:MM:SS format!
+	`StartTime` timestamp,
+	`EndTime` timestamp,
+	PRIMARY KEY (`RoleId`, `FacilityId`, `StartTime`, `EndTime`)
 );
+
+CREATE TABLE IF NOT EXISTS `DoorXRoleXTimeRange` (
+	`RoleId` integer REFERENCES `Roles` (`RoleId`),
+	`DoorId` integer REFERENCES `Doors` (`DoorId`),
+	-- TODO: if you mess this up the computer kills you
+	-- here, the timestamps are HH:MM:SS format!
+	`StartTime` timestamp,
+	`EndTime` timestamp,
+	PRIMARY KEY (`RoleId`, `DoorId`, `StartTime`, `EndTime`)
+);
+
  
 -- this is appendonly
 CREATE TABLE IF NOT EXISTS `Logs` (
