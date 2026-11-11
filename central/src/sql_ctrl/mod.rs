@@ -38,12 +38,12 @@ pub struct Query {
 
 fn load_query_strings() -> Query {
     // should eventually be from the config or wtv
-    let log_scan = fs::read_to_string(Path::new("./sql_files/LogScan.sql")).unwrap();
-    let log_ping = fs::read_to_string(Path::new("./sql_files/LogPing.sql")).unwrap();
-    let check_auth = fs::read_to_string(Path::new("./sql_files/CheckAuth.sql")).unwrap();
-    let check_open = fs::read_to_string(Path::new("./sql_files/DoorOpenPublic.sql")).unwrap();
-    let door_exists = fs::read_to_string(Path::new("./sql_files/DoorExists.sql")).unwrap();
-    let user_exists = fs::read_to_string(Path::new("./sql_files/UserExists.sql")).unwrap();
+    let log_scan = fs::read_to_string(Path::new("./db/LogScan.sql")).unwrap();
+    let log_ping = fs::read_to_string(Path::new("./db/LogPing.sql")).unwrap();
+    let check_auth = fs::read_to_string(Path::new("./db/CheckAuth.sql")).unwrap();
+    let check_open = fs::read_to_string(Path::new("./db/DoorOpenPublic.sql")).unwrap();
+    let door_exists = fs::read_to_string(Path::new("./db/DoorExists.sql")).unwrap();
+    let user_exists = fs::read_to_string(Path::new("./db/UserExists.sql")).unwrap();
 
     Query {
         log_scan,
@@ -56,15 +56,15 @@ fn load_query_strings() -> Query {
 }
 
 fn load_database_init_query() -> std::io::Result<String> {
-    fs::read_to_string(Path::new("./sql_files/CARDatabase.sql"))
+    fs::read_to_string(Path::new("./db/CARDatabase.sql"))
 }
 
 fn load_init_public_query() -> std::io::Result<String> {
-    fs::read_to_string(Path::new("./sql_files/InitPublicRole.sql"))
+    fs::read_to_string(Path::new("./db/InitPublicRole.sql"))
 }
 
 fn load_check_public_init_query() -> std::io::Result<String> {
-    fs::read_to_string(Path::new("./sql_files/CheckPublic.sql"))
+    fs::read_to_string(Path::new("./db/CheckPublic.sql"))
 }
 
 fn current_time_unix() -> String {
@@ -81,7 +81,7 @@ impl Central<Empty> {
     }
 
     fn get_connection() -> rusqlite::Result<Connection> {
-        let db_path = Path::new("./database.db");
+        let db_path = Path::new("./db/database.db");
         let conn = rusqlite::Connection::open(db_path)?;
         conn.pragma_update(None, "foreign_keys", "ON")?;
         Ok(conn)
