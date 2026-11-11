@@ -2,57 +2,87 @@
 -- NOTE: foreign keys are only enforced if you run `PRAGMA foreign_keys = ON;`
 -- on every connection (SQLite default is OFF).
 
-CREATE TABLE `Users` (
+CREATE TABLE IF NOT EXISTS `Users` (
   `UserId` integer PRIMARY KEY,
+  `Name` varchar(255),
   `DateIssued` timestamp
 );
-
-CREATE TABLE `Roles` (
+ 
+CREATE TABLE IF NOT EXISTS `Roles` (
   `RoleId` integer PRIMARY KEY,
-  `Description` varchar(255)
+  `description` varchar(255)
 );
-
-CREATE TABLE `Facilities` (
+ 
+CREATE TABLE IF NOT EXISTS `Facilities` (
   `FacilityId` integer PRIMARY KEY,
   `Name` varchar(255)
 );
-
-CREATE TABLE `UserXRole` (
-  `UserId` integer NOT NULL REFERENCES `Users` (`UserId`),
-  `RoleId` integer NOT NULL REFERENCES `Roles` (`RoleId`),
-  `DateIssued` timestamp,
-  PRIMARY KEY (`UserId`, `RoleId`)
-);
-
-CREATE TABLE `Doors` (
+ 
+CREATE TABLE IF NOT EXISTS `Doors` (
   `DoorId` integer PRIMARY KEY,
-  `FacilityId` integer NOT NULL REFERENCES `Facilities` (`FacilityId`)
-);
-
-CREATE TABLE `FacilityXRole` (
-  `RoleId` integer NOT NULL REFERENCES `Roles` (`RoleId`),
   `FacilityId` integer NOT NULL REFERENCES `Facilities` (`FacilityId`),
+  `Name` varchar(255),
+  `ExpectedState` bool -- standin for more complicated enum !
+);
+ 
+CREATE TABLE IF NOT EXISTS `UserXRole` (
+  `UserId` integer REFERENCES `Users` (`UserId`),
+  `UserRoleId` integer REFERENCES `Roles` (`RoleId`),
   `DateIssued` timestamp,
-  -- TODO: if you mess this up the computer kills you
-  -- here, the timestamps are HH:MM:SS format!
-  `ValidRangeStart` text NOT NULL,
-  `ValidRangeEnd` text NOT NULL,
+  PRIMARY KEY (`UserId`, `UserRoleId`)
+);
+ 
+CREATE TABLE IF NOT EXISTS `FacilityXRole` (
+  `FacilityId` integer REFERENCES `Facilities` (`FacilityId`),
+  `RoleId` integer REFERENCES `Roles` (`RoleId`),
+  `DateIssued` timestamp,
   PRIMARY KEY (`FacilityId`, `RoleId`)
 );
 
--- this is appendonly
-CREATE TABLE `Logs` (
-  `DoorId` integer NOT NULL REFERENCES `Doors` (`DoorId`),
-  `UserId` integer NOT NULL REFERENCES `Users` (`UserId`),
-  `Date` timestamp NOT NULL,
-  `Result` bool,
-  PRIMARY KEY (`DoorId`, `UserId`, `Date`)
+-- exception layer: let a role access one particular door
+CREATE TABLE IF NOT EXISTS `DoorXRole` (
+  `RoleId` integer REFERENCES `Roles` (`RoleId`),
+  `DoorId` integer REFERENCES `Doors` (`DoorId`),
+  `Allowed` bool,
+  `DateIssued` timestamp,
+  PRIMARY KEY (`RoleId`, `DoorId`)
+);
+
+CREATE TABLE IF NOT EXISTS `FacilityXRoleXTimeRange` (
+	`RoleId` integer REFERENCES `Roles` (`RoleId`),
+	`FacilityId` integer REFERENCES `Facilities` (`FacilityId`),
+	-- TODO: if you mess this up the computer kills you
+	-- here, the timestamps are HH:MM:SS format!
+	`StartTime` timestamp,
+	`EndTime` timestamp,
+	PRIMARY KEY (`RoleId`, `FacilityId`, `StartTime`, `EndTime`)
+);
+
+CREATE TABLE IF NOT EXISTS `DoorXRoleXTimeRange` (
+	`RoleId` integer REFERENCES `Roles` (`RoleId`),
+	`DoorId` integer REFERENCES `Doors` (`DoorId`),
+	-- TODO: if you mess this up the computer kills you
+	-- here, the timestamps are HH:MM:SS format!
+	`StartTime` timestamp,
+	`EndTime` timestamp,
+	PRIMARY KEY (`RoleId`, `DoorId`, `StartTime`, `EndTime`)
 );
 
 -- this is appendonly
-CREATE TABLE `LivenessLog` (
-  `DoorId` integer NOT NULL REFERENCES `Doors` (`DoorId`),
-  `Date` timestamp NOT NULL,
-  `Sent` text,
+CREATE TABLE IF NOT EXISTS `Logs` (
+  `DoorId` integer REFERENCES `Doors` (`DoorId`),
+  `UserId` integer REFERENCES `Users` (`UserId`),
+  `Date` timestamp,
+  `Result` bool,
+  PRIMARY KEY (`DoorId`, `UserId`, `Date`)
+);
+ 
+-- this is appendonly
+CREATE TABLE IF NOT EXISTS `LivenessLog` (
+  `DoorId` integer REFERENCES `Doors` (`DoorId`),
+  `Date` timestamp,
+  `Sent` str,
   PRIMARY KEY (`DoorId`, `Date`)
 );
+ 
+-- you can't do the alter table stuff in sqlite

@@ -1,2 +1,10 @@
 **/target
 **/*.db
+# Python environments
+venv/
+.venv/
+.direnv
+__pycache__
+
+*.sqlite3
+migrations/
