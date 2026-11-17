@@ -10,7 +10,7 @@ class ValidRangeMixin(models.Model):
  
 
 class Facilities(models.Model):
-    id = models.IntegerField(primary_key=True, db_column="FacilityId")
+    id = models.AutoField(primary_key=True, db_column="FacilityId")
     name = models.CharField(max_length=255, null=True, blank=True, db_column="Name")
  
     class Meta:
@@ -22,7 +22,7 @@ class Facilities(models.Model):
  
  
 class Doors(models.Model):
-    id = models.IntegerField(primary_key=True, db_column="DoorId")
+    id = models.AutoField(primary_key=True, db_column="DoorId")
     facility = models.ForeignKey(
         Facilities,
         on_delete=models.CASCADE,

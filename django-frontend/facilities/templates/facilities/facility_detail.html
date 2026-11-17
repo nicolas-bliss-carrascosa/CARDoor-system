@@ -22,15 +22,15 @@
         <span class="badge text-bg-secondary">{{ facility.id }}</span>
       </div>
       <div class="text-end mt-3 mt-md-0">
-        <span class="badge text-bg-primary me-1">{{ facility.groups|length }} group{{ facility.groups|length|pluralize }}</span>
-        <span class="badge text-bg-info">{{ facility.doors|length }} door{{ facility.doors|length|pluralize }}</span>
+        <span class="badge text-bg-primary me-1">{{ includedRoles|length }} role{{ includedRoles|length|pluralize }}</span>
+        <span class="badge text-bg-info">{{ doors|length }} door{{ doors|length|pluralize }}</span>
       </div>
     </div>
   </div>
 
   <div class="row g-4 align-items-start">
 
-    {# ============ GROUPS ============ #}
+    {# ============ ROLES ============ #}
     <div class="col-lg-6">
       <div class="card shadow-sm h-100">
         <div class="card-header bg-white">
@@ -38,38 +38,39 @@
         </div>
 
         <ul class="list-group list-group-flush">
-          {% for role in roles %}
+          {% for role in includedRoles %}
             <li class="list-group-item d-flex justify-content-between align-items-center">
               <span>{{ role.description }}</span>
               <button type="button"
                       class="btn btn-sm btn-outline-danger"
                       data-bs-toggle="modal"
                       data-bs-target="#confirmRemoveModal"
-                      data-item-type="group"
-                      data-item-name="{{ role.description }}"
-                      >
+                      data-item-type="role"
+                      data-item-id="{{ role.id }}"
+                      data-item-name="{{ role.description }}">
                 <i class="bi bi-trash"></i> Remove
               </button>
             </li>
           {% empty %}
-            <li class="list-group-item text-muted fst-italic">No roless have access to this facility.</li>
+            <li class="list-group-item text-muted fst-italic">No roles have access to this facility.</li>
           {% endfor %}
         </ul>
 
         <div class="card-footer bg-white">
           <form method="post" class="row g-2">
             {% csrf_token %}
+            <input type="hidden" name="action" value="add_role" />
             <div class="col">
-              <label for="groupSelect" class="visually-hidden">Group</label>
-              <select id="groupSelect" name="group" class="form-select" required>
-                <option value="" selected disabled>Select a group to add...</option>
-                {% for role in excluded_roles %}
+              <label for="roleSelect" class="visually-hidden">Role</label>
+              <select id="roleSelect" name="role" class="form-select" required>
+                <option value="" selected disabled>Select a role to add...</option>
+                {% for role in excludedRoles %}
                   <option value="{{ role.id }}">{{ role.description }}</option>
                 {% endfor %}
               </select>
             </div>
             <div class="col-auto">
-              <button type="submit" class="btn btn-primary"><i class="bi bi-plus-lg"></i> Add Group</button>
+              <button type="submit" class="btn btn-primary"><i class="bi bi-plus-lg"></i> Add Role</button>
             </div>
           </form>
         </div>
@@ -84,26 +85,29 @@
         </div>
 
         <ul class="list-group list-group-flush">
-          {% for door in facility.doors.all%}
+          {% for door in doors %}
             <li class="list-group-item d-flex justify-content-between align-items-center">
               <span>{{ door.name }}</span>
-            <div>
-              {% if door.allowed == True %}
-              <button type="button"
-                      class="btn btn-sm btn-primary">Lock door</button>
-              {% else %}
-              <button type="button"
-                      class="btn btn-sm btn-outline-danger">Unlock door</button>
-              {% endif %}
-              <button type="button"
-                      class="btn btn-sm btn-outline-danger ms-2"
-                      data-bs-toggle="modal"
-                      data-bs-target="#confirmRemoveModal"
-                      data-item-type="door"
-                      data-item-name="{{ door.name }}"
-                      >
-                <i class="bi bi-trash"></i> Remove
-              </button>
+              <div class="d-flex align-items-center">
+                <form method="post" class="d-inline">
+                  {% csrf_token %}
+                  <input type="hidden" name="action" value="toggle_door" />
+                  <input type="hidden" name="door_id" value="{{ door.id }}" />
+                  {% if door.expected_state %}
+                    <button type="submit" class="btn btn-sm btn-primary">Lock door</button>
+                  {% else %}
+                    <button type="submit" class="btn btn-sm btn-outline-danger">Unlock door</button>
+                  {% endif %}
+                </form>
+                <button type="button"
+                        class="btn btn-sm btn-outline-danger ms-2"
+                        data-bs-toggle="modal"
+                        data-bs-target="#confirmRemoveModal"
+                        data-item-type="door"
+                        data-item-id="{{ door.id }}"
+                        data-item-name="{{ door.name }}">
+                  <i class="bi bi-trash"></i> Remove
+                </button>
               </div>
             </li>
           {% empty %}
@@ -112,11 +116,12 @@
         </ul>
 
         <div class="card-footer bg-white">
-          <form method="post"  class="row g-2">
+          <form method="post" class="row g-2">
             {% csrf_token %}
+            <input type="hidden" name="action" value="add_door" />
             <div class="col">
               <label for="doorName" class="visually-hidden">Door name</label>
-              <input type="text" id="doorName" name="name" class="form-control" placeholder="New door name" maxlength="100" required>
+              <input type="text" id="doorName" name="name" class="form-control" placeholder="New door name" maxlength="255" required>
             </div>
             <div class="col-auto">
               <button type="submit" class="btn btn-primary"><i class="bi bi-plus-lg"></i> Add Door</button>
@@ -134,6 +139,8 @@
   <div class="modal-dialog modal-dialog-centered">
     <form method="post" id="confirmRemoveForm" class="modal-content">
       {% csrf_token %}
+      <input type="hidden" name="action" id="removeAction" value="remove">
+      <input type="hidden" name="item_id" id="removeId">
       <div class="modal-header">
         <h5 class="modal-title" id="confirmRemoveLabel">Confirm removal</h5>
         <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
@@ -151,3 +158,18 @@
   </div>
 </div>
 {% endblock content %}
+
+{% block extra_js %}
+<script>
+  document.getElementById('confirmRemoveModal').addEventListener('show.bs.modal', (e) => {
+    const btn = e.relatedTarget;
+    const type = btn.dataset.itemType;
+
+    document.getElementById('confirmRemoveType').textContent = type;
+    document.getElementById('confirmRemoveName').textContent = btn.dataset.itemName;
+    document.getElementById('removeId').value = btn.dataset.itemId;
+    // roles post "remove" (same as the user detail page); doors post "remove_door"
+    document.getElementById('removeAction').value = type === 'role' ? 'remove' : 'remove_' + type;
+  });
+</script>
+{% endblock extra_js %}

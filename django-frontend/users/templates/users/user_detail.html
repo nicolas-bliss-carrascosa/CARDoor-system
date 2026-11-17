@@ -20,8 +20,7 @@
         <span class="badge text-bg-secondary">{{ user.id }}</span>
       </div>
       <div class="text-end mt-3 mt-md-0">
-        <span class="badge text-bg-primary me-1">{{ roles|length }} role{{ roles|length|pluralize }}</span>
-        <span class="badge text-bg-info">{{ user.door_overrides|length }} door exception{{ user.door_overrides|length|pluralize }}</span>
+        <span class="badge text-bg-primary me-1">{{ includedRoles|length }} role{{ includedRoles|length|pluralize }}</span>
       </div>
     </div>
   </div>
@@ -40,14 +39,13 @@
             <li class="list-group-item d-flex justify-content-between align-items-center">
               <span>{{ role.description }}</span>
               <button type="button"
-                      class="btn btn-sm btn-outline-danger"
-                      data-bs-toggle="modal"
-                      data-bs-target="#confirmRemoveModal"
-                      data-item-type="role"
-                      data-item-name="{{ role.description }}"
-                     >
-                <i class="bi bi-trash"></i> Remove
-              </button>
+        class="btn btn-sm btn-outline-danger"
+        data-bs-toggle="modal"
+        data-bs-target="#confirmRemoveModal"
+        data-item-id="{{ role.id }}"
+        data-item-name="{{ role.description }}">
+  <i class="bi bi-trash"></i> Remove
+</button>
             </li>
           {% empty %}
             <li class="list-group-item text-muted fst-italic">This user has no roles.</li>
@@ -56,6 +54,7 @@
 
         <div class="card-footer bg-white">
           <form method="post"  class="row g-2">
+            <input type="hidden" name="action" value="add_role" />
             {% csrf_token %}
             <div class="col">
               <label for="roleSelect" class="visually-hidden">Role</label>
@@ -77,87 +76,23 @@
     {# ============ DOOR EXCEPTIONS ============ #}
     <div class="col-lg-6">
       <div class="card shadow-sm h-100">
-        <div class="card-header bg-white">
-          <h2 class="h5 mb-0"><i class="bi bi-door-closed-fill me-2"></i>Individual Door Exceptions</h2>
-          <div class="form-text mt-1">These override whatever this user's roles allow.</div>
-        </div>
-
-        <ul class="list-group list-group-flush">
-          {% for override in overriddenDoors %}
-            <li class="list-group-item d-flex justify-content-between align-items-center">
-              <div>
-                {% if override.allowed %}
-                  <span class="badge text-bg-success me-2"><i class="bi bi-check-lg"></i> Included</span>
-                {% else %}
-                  <span class="badge text-bg-danger me-2"><i class="bi bi-x-lg"></i> Excluded</span>
-                {% endif %}
-                {{ override.name }}
-                <span class="text-muted small">&middot; {{ override.facility.name }}</span>
-              </div>
-              <button type="button"
-                      class="btn btn-sm btn-outline-danger"
-                      data-bs-toggle="modal"
-                      data-bs-target="#confirmRemoveModal"
-                      data-item-type="exception for"
-                      data-item-name="{{ override.id}}"
-                    >
-                <i class="bi bi-trash"></i> Remove
-              </button>
-            </li>
-          {% empty %}
-            <li class="list-group-item text-muted fst-italic">No individual door exceptions.</li>
-          {% endfor %}
-        </ul>
-
-        <div class="card-footer bg-white">
-          <form method="post" class="row g-2">
-            {% csrf_token %}
-            <div class="col-12">
-              <label for="doorSelect" class="visually-hidden">Door</label>
-              <select id="doorSelect" name="door" class="form-select" required>
-                <option value="" selected disabled>Select a door...</option>
-                {% regroup otherDoors by facility.name as facility_groups %}
-                {% for facility in facility_groups %}
-                  <optgroup label="{{ facility.grouper }}">
-                    {% for door in facility.list %}
-                      <option value="{{ door.id }}">{{ door.name }}</option>
-                    {% endfor %}
-                  </optgroup>
-                {% endfor %}
-              </select>
-            </div>
-            <div class="col">
-              <div class="form-check form-check-inline">
-                <input class="form-check-input" type="radio" name="allowed" id="allowedYes" value="1" checked>
-                <label class="form-check-label" for="allowedYes">Include</label>
-              </div>
-              <div class="form-check form-check-inline">
-                <input class="form-check-input" type="radio" name="allowed" id="allowedNo" value="0">
-                <label class="form-check-label" for="allowedNo">Exclude</label>
-              </div>
-            </div>
-            <div class="col-auto">
-              <button type="submit" class="btn btn-primary"><i class="bi bi-plus-lg"></i> Add Door</button>
-            </div>
-          </form>
-        </div>
-      </div>
+     </div>
     </div>
 
   </div>
 </div>
-
-{# ============ Shared remove-confirmation modal ============ #}
 <div class="modal fade" id="confirmRemoveModal" tabindex="-1" aria-labelledby="confirmRemoveLabel" aria-hidden="true">
   <div class="modal-dialog modal-dialog-centered">
     <form method="post" id="confirmRemoveForm" class="modal-content">
       {% csrf_token %}
+      <input type="hidden" name="action" value="remove">
+      <input type="hidden" name="item_id" id="removeId">
       <div class="modal-header">
         <h5 class="modal-title" id="confirmRemoveLabel">Confirm removal</h5>
         <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
       </div>
       <div class="modal-body">
-        Remove the <span id="confirmRemoveType"></span>
+        Remove the role
         <strong id="confirmRemoveName"></strong>
         for <strong>{{ user.name }}</strong>?
       </div>
@@ -168,4 +103,12 @@
     </form>
   </div>
 </div>
+<script>
+  document.getElementById('confirmRemoveModal').addEventListener('show.bs.modal', (e) => {
+    const btn = e.relatedTarget;
+    document.getElementById('confirmRemoveName').textContent = btn.dataset.itemName;
+
+    document.getElementById('removeId').value = btn.dataset.itemId;
+  });
+</script>
 {% endblock content %}

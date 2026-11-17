@@ -4,7 +4,15 @@
 <div class="container my-4">
   <div class="d-flex justify-content-between align-items-center mb-3">
     <h3 class="mb-0">Users</h3>
-    <button type="button" class="btn btn-primary">+ Add User</button>
+    <div class="d-flex gap-2">
+      <button type="button" class="btn btn-outline-primary"
+              data-bs-toggle="modal"
+              data-bs-target="#addRoleModal"
+      >+ Add Role</button>
+      <button type="button" class="btn btn-primary"
+              data-bs-toggle="modal"
+              data-bs-target="#addUserModal">+ Add User</button>
+    </div>
   </div>
 
   <!-- Toolbar: search, filter, sort -->
@@ -47,6 +55,7 @@
             <th scope="col">Name</th>
             <th scope="col">Id</th>
             <th scope="col">Role</th>
+            <th scope="col">Actions</th>
           </tr>
         </thead>
         <tbody>
@@ -54,8 +63,8 @@
           <tr data-user
               data-name="{{ user.name|lower }}"
               data-id="{{ user.id|lower }}"
-data-roles="{% for r in user.role_list %}{{ r.id }}{% if not forloop.last %}|{% endif %}{% endfor %}"
-data-primary-role="{% if user.role_list %}{{ user.role_list.0.id }}{% endif %}">
+              data-roles="{% for r in user.role_list %}{{ r.id }}{% if not forloop.last %}|{% endif %}{% endfor %}"
+              data-primary-role="{% if user.role_list %}{{ user.role_list.0.id }}{% endif %}">
             <td>
               <a href="{% url 'user_detail' id=user.id %}" class="text-decoration-none fw-bold">
                 {{ user.name }}
@@ -66,6 +75,16 @@ data-primary-role="{% if user.role_list %}{{ user.role_list.0.id }}{% endif %}">
               {% for group in user.role_list%}
                 {{ group.description }}<br/>
               {% endfor %}
+            </td>
+            <td class="text-end">
+              <button type="button" class="btn btn-sm btn-outline-danger"
+                  data-bs-toggle="modal"
+                  data-bs-target="#confirmRemoveModal"
+                  data-user-id="{{user.id}}"
+                  data-user-name="{{user.name}}"
+                  aria-label="Remove {{ user.name }}">
+                Remove
+              </button>
             </td>
           </tr>
           {% empty %}
@@ -81,6 +100,84 @@ data-primary-role="{% if user.role_list %}{{ user.role_list.0.id }}{% endif %}">
     </div>
   </div>
 </div>
+
+<!--===================== MODALS =============================-->
+<div class="modal fade" id="confirmRemoveModal" tabindex="-1" aria-labelledby="Remove user" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered">
+    <form method="post" id="confirmRemoveForm" class="modal-content">
+      {% csrf_token %}
+      <input type="hidden" name="action" value="remove">
+      <input type="hidden" name="user_id" id="removeId">
+      <div class="modal-header">
+        <h5 class="modal-title" id="confirmRemoveLabel">Confirm removal</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+      </div>
+      <div class="modal-body">
+        Remove <strong id="confirmRemoveName"></strong> from the system?
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+        <button type="submit" class="btn btn-danger">Remove</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<div class="modal fade" id="addRoleModal" tabindex="-1" aria-labelledby="Add role" aria-hidden="true">
+   <div class="modal-dialog modal-dialog-centered">
+    <form method="post" id="addRoleForm" class="modal-content">
+      {% csrf_token %}
+      <input type="hidden" name="action" value="add_role">
+
+      <div class="modal-header">
+        <h5 class="modal-title">Add new role</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+      </div>
+      <div class="modal-body">
+        <input type="text" class="form-control" name="role_name" placeholder="Role name..." required>
+      </div>
+            <div class="modal-footer">
+        <button type="submit" class="btn btn-primary">Add role</button>
+      </div>
+ </form>
+ </div>
+</div>
+
+<div class="modal fade" id="addUserModal" tabindex="-1" aria-labelledby="Add user" aria-hidden="true">
+   <div class="modal-dialog modal-dialog-centered">
+    <form method="post" id="addUserForm" class="modal-content">
+      {% csrf_token %}
+      <input type="hidden" name="action" value="add_user">
+
+      <div class="modal-header">
+        <h5 class="modal-title">Add new role</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+      </div>
+<div class="modal-body">
+  <div class="mb-3">
+    <label for="newUserName" class="form-label">Name</label>
+    <input type="text" class="form-control" id="newUserName" name="user_name" placeholder="First and last name..." required>
+  </div>
+
+  <div class="mb-1">
+    <label class="form-label">Roles</label>
+    <div class="d-flex flex-wrap gap-2 border rounded p-2" style="max-height: 200px; overflow-y: auto;">
+      {% for role in roles %}
+        <input type="checkbox" class="btn-check" name="roles" value="{{ role.id }}" id="newUserRole{{ role.id }}" autocomplete="off">
+        <label class="btn btn-sm btn-outline-primary rounded-pill" for="newUserRole{{ role.id }}">{{ role.description }}</label>
+      {% empty %}
+        <span class="text-muted">No roles available</span>
+      {% endfor %}
+    </div>
+    <div class="form-text">Click a role to select it. Click again to deselect.</div>
+  </div>
+</div>
+    <div class="modal-footer">
+      <button type="submit" class="btn btn-primary">Add role</button>
+    </div>
+ </form>
+ </div>
+</div>
 {% endblock content %}
 
 {% block extra_js %}
@@ -90,6 +187,7 @@ data-primary-role="{% if user.role_list %}{{ user.role_list.0.id }}{% endif %}">
   const sortBy = document.getElementById('sortBy');
   const tbody = document.querySelector('#userTable tbody');
   const noMatches = document.getElementById('noMatches');
+  const removeModal = document.getElementById('confirmRemoveModal');
   const rows = [...tbody.querySelectorAll('tr[data-user]')];
 
 function applyFilter() {
@@ -128,7 +226,11 @@ function applyFilter() {
   search.addEventListener('input', applyFilter);
   groupFilter.addEventListener('change', applyFilter);
   sortBy.addEventListener('change', applySort);
-
+  removeModal.addEventListener('shown.bs.modal', (e) => {
+  const btn = e.relatedTarget;
+  document.getElementById('removeId').value = btn.dataset.userId;
+  document.getElementById('confirmRemoveName').textContent = btn.dataset.userName;
+});
   applySort();
   applyFilter();
 </script>

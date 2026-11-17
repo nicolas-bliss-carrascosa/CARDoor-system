@@ -5,9 +5,44 @@ from facilities.models import UserXDoor, Doors
 from collections import defaultdict
 from django.db.models import OuterRef, Subquery
 from django.shortcuts import get_object_or_404, render
-
+from django.contrib import messages
+from django.utils import timezone
+from django.db import transaction
 # Create your views here.
 def users(request):
+    if request.method == "POST":
+        action = request.POST.get("action")
+        
+        if action == "remove":
+            user = get_object_or_404(Users, id=request.POST.get("user_id"))
+            try:
+                with transaction.atomic():
+                    UserXDoor.objects.filter(user=user).delete()
+                    UserXRole.objects.filter(user=user).delete()
+                    user.delete()
+            except Exception as e:
+                print(repr(e))
+                messages.error(request, "Could not delete the user. Nothing was changed.")
+        elif action == "add_role":
+            try:
+                with transaction.atomic():
+                    role_name = request.POST.get('role_name')
+                    new_role = Roles.objects.create(description=role_name)
+            except Exception as e:
+                print(repr(e))
+                messages.error(request, "Could not create the role.")
+        elif action == "add_user":
+            try:
+                with transaction.atomic():
+                    user_name = request.POST.get('user_name')
+                    user_roles = request.POST.getlist('roles')
+                    new_user = Users.objects.create(name=user_name, date_issued=timezone.now())
+                    new_user.roles.set(user_roles)
+            except Exception as e:
+                print(repr(e))
+                messages.error(request, "Could not create the user.")
+
+
     users = list(Users.objects.all())
     pairs = list(UserXRole.objects.values_list("user_id", "role_id"))
 
@@ -29,28 +64,46 @@ def find_door_ids(user_data):
     return UserXDoor.objects.filter(user=user_data).values_list('door_id', flat=True)
 
 
+
 def user_detail(request, id):
     user = get_object_or_404(Users, id=id)
+
+    if request.method == "POST":
+        action = request.POST.get("action")
+
+        if action == "remove":
+            item_id = request.POST.get("item_id")
+
+            deleted, _ = UserXRole.objects.filter(user=user, role_id=item_id).delete()
+
+            if deleted:
+                messages.success(request, "Removed.")
+            else:
+                messages.error(request, "Nothing was removed.")
+
+        elif action == "add_role":
+            role = get_object_or_404(Roles, id=request.POST.get("role"))
+            _, created = UserXRole.objects.get_or_create(
+                user=user, role=role,
+                defaults={"date_issued": timezone.now()},
+            )
+            if created:
+                messages.success(request, f"Added role {role.description}.")
+            else:
+                messages.info(request, "User already has that role.")
+
+
+        else:
+            messages.error(request, "Unknown action.")
+
 
     user_role_ids = find_role_ids(user)
     included_roles = Roles.objects.filter(id__in=user_role_ids)
     other_roles = Roles.objects.exclude(id__in=user_role_ids)
 
-    user_door_ids = find_door_ids(user)
-    user_override = UserXDoor.objects.filter(user=user, door=OuterRef('pk'))
-
-    overridden_doors = (
-        Doors.objects
-        .filter(id__in=user_door_ids)
-        .select_related('facility')
-        .annotate(allowed=Subquery(user_override.values('allowed')[:1]))
-    )
-    other_doors = Doors.objects.exclude(id__in=user_door_ids).select_related('facility')
-    breakpoint()
+   
     return render(request, "users/user_detail.html", {
         "user": user,
         "includedRoles": included_roles,
-        "otherRoles": other_roles,
-        "overriddenDoors": overridden_doors,
-        "otherDoors": other_doors,
+        "otherRoles": other_roles
     })
