@@ -1,3 +1,5 @@
+mod tcp_client;
+
 use std::cell::Cell;
 use std::rc::Rc;
 use std::sync::mpsc;
@@ -5,26 +7,24 @@ use std::thread;
 use std::time::Duration;
 
 use adw::prelude::*;
-use gtk4::gdk::Display;
-use gtk4::{Button, CssProvider, glib};
-use libadwaita as adw;
-
 use flipper_rpc::fs::FsRead;
 use flipper_rpc::proto::storage::DeleteRequest;
 use flipper_rpc::rpc::{req::Request, res::Response};
 use flipper_rpc::transport::Transport;
 use flipper_rpc::transport::serial::{list_flipper_ports, rpc::SerialRpcTransport};
+use gtk4::gdk::Display;
+use gtk4::{Button, CssProvider, glib};
+use libadwaita as adw;
+
+use tcp_client::{TcpCommand, TcpEvent, sanitize_token, spawn_tcp_worker};
 
 const APP_ID: &str = "com.cardoor.system";
 const SCAN_FILE_PATH: &str = "/ext/apps_data/card_sensor/scan.txt";
+const DEFAULT_DOOR_ID: &str = "door_1";
 
 enum WorkerEvent {
     Status(String),
     CardScanned { protocol: String, uid: String },
-}
-
-enum WorkerCommand {
-    StartApp(String),
 }
 
 fn main() {
@@ -37,7 +37,6 @@ fn main() {
 }
 
 fn main_window(app: &adw::Application) {
-    // Load theme.css once GTK has initialized the display
     let provider = CssProvider::new();
     provider.load_from_path("src/theme.css");
     if let Some(display) = Display::default() {
@@ -51,10 +50,42 @@ fn main_window(app: &adw::Application) {
     let (event_tx, event_rx) = mpsc::channel::<WorkerEvent>();
     spawn_rpc_worker(event_tx);
 
-    // Header bar with remote app launcher button
+    let (tcp_cmd_tx, tcp_event_rx) = spawn_tcp_worker(DEFAULT_DOOR_ID.to_string());
+
     let header_bar = adw::HeaderBar::new();
 
-    // Connection status group
+    // Door Server (TCP) group
+    let tcp_group = adw::PreferencesGroup::builder()
+        .title("Door Server (TCP)")
+        .build();
+
+    let retry_btn = Button::builder()
+        .label("Retry Connection")
+        .valign(gtk4::Align::Center)
+        .sensitive(false)
+        .build();
+
+    let tcp_status_row = adw::ActionRow::builder()
+        .title("Server Status")
+        .subtitle("Connecting to 127.0.0.1:7000...")
+        .build();
+    tcp_status_row.add_suffix(&retry_btn);
+
+    let door_id_row = adw::EntryRow::builder()
+        .title("Door ID")
+        .build();
+    door_id_row.set_text(DEFAULT_DOOR_ID);
+
+    let tcp_response_row = adw::ActionRow::builder()
+        .title("Last Server Response")
+        .subtitle("—")
+        .build();
+
+    tcp_group.add(&tcp_status_row);
+    tcp_group.add(&door_id_row);
+    tcp_group.add(&tcp_response_row);
+
+    // Flipper Zero connection group
     let connection_group = adw::PreferencesGroup::builder()
         .title("Flipper Zero Connection")
         .build();
@@ -65,7 +96,7 @@ fn main_window(app: &adw::Application) {
         .build();
     connection_group.add(&status_row);
 
-    // Captured card readout group
+    // Captured RFID card group
     let card_group = adw::PreferencesGroup::builder()
         .title("Captured RFID Card")
         .description("Reads incoming scans from /ext/apps_data/card_sensor/scan.txt")
@@ -97,7 +128,6 @@ fn main_window(app: &adw::Application) {
     card_group.add(&uid_row);
     card_group.add(&auto_reset_row);
 
-    // Manual reset button for single-capture mode
     let reset_btn = Button::builder()
         .label("Reset / Capture Next Card")
         .css_classes(["suggested-action", "pill"])
@@ -110,6 +140,7 @@ fn main_window(app: &adw::Application) {
         .orientation(gtk4::Orientation::Vertical)
         .spacing(18)
         .build();
+    content_box.append(&tcp_group);
     content_box.append(&connection_group);
     content_box.append(&card_group);
     content_box.append(&reset_btn);
@@ -131,13 +162,28 @@ fn main_window(app: &adw::Application) {
         .application(app)
         .title("Card Door")
         .default_width(600)
-        .default_height(520)
+        .default_height(680)
         .content(&toolbar_view)
         .build();
 
-    // Shared UI capture state
     let locked = Rc::new(Cell::new(false));
     let auto_reset = Rc::new(Cell::new(false));
+
+    // Retry TCP connection and send PING <door_id>
+    {
+        let tcp_cmd_tx = tcp_cmd_tx.clone();
+        let door_id_row = door_id_row.clone();
+        let retry_btn = retry_btn.clone();
+        let retry_btn_clone = retry_btn.clone();        
+        let tcp_status_row = tcp_status_row.clone();
+
+        retry_btn.connect_clicked(move |_| {
+            let door_id = sanitize_token(&door_id_row.text(), DEFAULT_DOOR_ID);
+            retry_btn_clone.set_sensitive(false);
+            tcp_status_row.set_subtitle("Reconnecting to 127.0.0.1:7000...");
+            let _ = tcp_cmd_tx.send(TcpCommand::Connect { door_id });
+        });
+    }
 
     // Reset button clears current card and unlocks capture
     {
@@ -178,8 +224,20 @@ fn main_window(app: &adw::Application) {
         });
     }
 
-    // Poll background RPC thread events on the GTK main loop
+    // Poll both Flipper RPC and TCP server channels on the GTK main loop
     glib::timeout_add_local(Duration::from_millis(100), move || {
+        while let Ok(tcp_event) = tcp_event_rx.try_recv() {
+            match tcp_event {
+                TcpEvent::Status(msg) => {
+                    tcp_status_row.set_subtitle(&msg);
+                    retry_btn.set_sensitive(true);
+                }
+                TcpEvent::Response(reply) => {
+                    tcp_response_row.set_subtitle(&reply);
+                }
+            }
+        }
+
         while let Ok(event) = event_rx.try_recv() {
             match event {
                 WorkerEvent::Status(msg) => {
@@ -189,6 +247,12 @@ fn main_window(app: &adw::Application) {
                     if !locked.get() || auto_reset.get() {
                         protocol_row.set_subtitle(&protocol);
                         uid_row.set_subtitle(&uid);
+
+                        let door_id = sanitize_token(&door_id_row.text(), DEFAULT_DOOR_ID);
+                        let _ = tcp_cmd_tx.send(TcpCommand::Scan {
+                            door_id,
+                            user_id: uid,
+                        });
 
                         if auto_reset.get() {
                             state_row.set_subtitle("Auto-Reset Active — Ready for next card");
@@ -252,7 +316,6 @@ fn spawn_rpc_worker(event_tx: mpsc::Sender<WorkerEvent>) {
                 device.device_name
             )));
 
-            // Active session polling loop
             loop {
                 match client.fs_read_to_string(SCAN_FILE_PATH) {
                     Ok(raw) => {
@@ -270,17 +333,15 @@ fn spawn_rpc_worker(event_tx: mpsc::Sender<WorkerEvent>) {
                             let _ = event_tx.send(WorkerEvent::CardScanned { protocol, uid });
                         }
                     }
-                    Err(_) => {
-                        match client.send_and_receive(Request::Ping(vec![1, 2, 3, 4])) {
-                            Ok(Response::Ping(_)) => {}
-                            _ => {
-                                let _ = event_tx.send(WorkerEvent::Status(
-                                    "Flipper Zero disconnected. Reconnecting...".into(),
-                                ));
-                                break;
-                            }
+                    Err(_) => match client.send_and_receive(Request::Ping(vec![1, 2, 3, 4])) {
+                        Ok(Response::Ping(_)) => {}
+                        _ => {
+                            let _ = event_tx.send(WorkerEvent::Status(
+                                "Flipper Zero disconnected. Reconnecting...".into(),
+                            ));
+                            break;
                         }
-                    }
+                    },
                 }
 
                 thread::sleep(Duration::from_millis(200));
