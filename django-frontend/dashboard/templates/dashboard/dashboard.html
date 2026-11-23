@@ -9,7 +9,7 @@
                     <div class="card-title">
                         Interactions
                     </div>
-                    0 interactions reported today
+                    {{interactions|length}} interactions reported today
                 </div>
             </div>
         </div>
@@ -19,7 +19,7 @@
                     <div class="card-title">
                         Alerts
                     </div>
-                    0 alerts reported today
+                    {{alerts|length}} alerts reported today
                 </div>
             </div>
         </div>
@@ -28,10 +28,11 @@
         <div class="col">
             <div class="card">
                 <div class="card-body">
-                    I'm gonna put a chart here wow
+                    {{div|safe}}
                 </div>
             </div>
         </div>
     </div>
 </div>
+{{script|safe}}
 {% endblock content %}

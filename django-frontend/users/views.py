@@ -2,8 +2,9 @@ from django.http import Http404
 from django.shortcuts import render
 from .models import Users, Roles, UserXRole
 from facilities.models import UserXDoor, Doors
+from dashboard.models import Logs
 from collections import defaultdict
-from django.db.models import OuterRef, Subquery
+from django.db.models import OuterRef, Subquery, F
 from django.shortcuts import get_object_or_404, render
 from django.contrib import messages
 from django.utils import timezone
@@ -63,6 +64,14 @@ def find_role_ids(user_data):
 def find_door_ids(user_data):
     return UserXDoor.objects.filter(user=user_data).values_list('door_id', flat=True)
 
+def find_interactions(user_data):
+
+    logs = (
+        Logs.objects.filter(user=user_data)
+        .annotate(door_name=F("door__name"), facility_name=F("door__facility__name"))
+        .order_by("-date")
+    )
+    return logs
 
 
 def user_detail(request, id):
@@ -100,10 +109,12 @@ def user_detail(request, id):
     user_role_ids = find_role_ids(user)
     included_roles = Roles.objects.filter(id__in=user_role_ids)
     other_roles = Roles.objects.exclude(id__in=user_role_ids)
+    interactions = find_interactions(user)
 
    
     return render(request, "users/user_detail.html", {
         "user": user,
         "includedRoles": included_roles,
-        "otherRoles": other_roles
+        "otherRoles": other_roles,
+        "interactions": interactions
     })

@@ -1,114 +1,192 @@
 {% extends 'base.html' %}
-{% block title %}Search Users{% endblock title %}
+{% block title %}
+  Search Users
+{% endblock title %}
 {% block content %}
-<div class="container py-4">
-  {% if messages %}
-    {% for message in messages %}
-      <div class="alert alert-{{ message.tags|default:'info' }} alert-dismissible fade show" role="alert">
-        {{ message }}
-        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
-      </div>
-    {% endfor %}
-  {% endif %}
-
-  {# User header #}
-  <div class="card shadow-sm mb-4">
-    <div class="card-body d-flex flex-wrap justify-content-between align-items-center">
-      <div>
-        <h1 class="h3 mb-1">{{ user.name }}</h1>
-        <span class="text-muted">User ID:</span>
-        <span class="badge text-bg-secondary">{{ user.id }}</span>
-      </div>
-      <div class="text-end mt-3 mt-md-0">
-        <span class="badge text-bg-primary me-1">{{ includedRoles|length }} role{{ includedRoles|length|pluralize }}</span>
-      </div>
-    </div>
-  </div>
-
-  <div class="row g-4 align-items-start">
-
-    {# ============ ROLES ============ #}
-    <div class="col-lg-6">
-      <div class="card shadow-sm h-100">
-        <div class="card-header bg-white">
-          <h2 class="h5 mb-0"><i class="bi bi-people-fill me-2"></i>Member Roles</h2>
+  <div class="container py-4">
+    {% if messages %}
+      {% for message in messages %}
+        <div
+          class="alert alert-{{ message.tags|default:'info' }} alert-dismissible fade show"
+          role="alert"
+        >
+          {{ message }}
+          <button
+            type="button"
+            class="btn-close"
+            data-bs-dismiss="alert"
+            aria-label="Close"
+          ></button>
         </div>
+      {% endfor %}
+    {% endif %}
 
-        <ul class="list-group list-group-flush">
-          {% for role in includedRoles %}
-            <li class="list-group-item d-flex justify-content-between align-items-center">
-              <span>{{ role.description }}</span>
-              <button type="button"
-        class="btn btn-sm btn-outline-danger"
-        data-bs-toggle="modal"
-        data-bs-target="#confirmRemoveModal"
-        data-item-id="{{ role.id }}"
-        data-item-name="{{ role.description }}">
-  <i class="bi bi-trash"></i> Remove
-</button>
-            </li>
-          {% empty %}
-            <li class="list-group-item text-muted fst-italic">This user has no roles.</li>
-          {% endfor %}
-        </ul>
-
-        <div class="card-footer bg-white">
-          <form method="post"  class="row g-2">
-            <input type="hidden" name="action" value="add_role" />
-            {% csrf_token %}
-            <div class="col">
-              <label for="roleSelect" class="visually-hidden">Role</label>
-              <select id="roleSelect" name="role" class="form-select" required>
-                <option value="" selected disabled>Select a role to add...</option>
-                {% for role in otherRoles %}
-                  <option value="{{ role.id }}">{{ role.description }}</option>
-                {% endfor %}
-              </select>
-            </div>
-            <div class="col-auto">
-              <button type="submit" class="btn btn-primary"><i class="bi bi-plus-lg"></i> Add Role</button>
-            </div>
-          </form>
+    {# User header #}
+    <div class="card shadow-sm mb-4">
+      <div
+        class="card-body d-flex flex-wrap justify-content-between align-items-center"
+      >
+        <div>
+          <h1 class="h3 mb-1">{{ user.name }}</h1>
+          <span class="text-muted">User ID:</span>
+          <span class="badge text-bg-secondary">{{ user.id }}</span>
+        </div>
+        <div class="text-end mt-3 mt-md-0">
+          <span class="badge text-bg-primary me-1"
+            >{{ includedRoles|length }}
+            role{{ includedRoles|length|pluralize }}</span
+          >
         </div>
       </div>
     </div>
 
-    {# ============ DOOR EXCEPTIONS ============ #}
-    <div class="col-lg-6">
-      <div class="card shadow-sm h-100">
-     </div>
+    <div class="row g-4 align-items-start">
+      {# ============ ROLES ============ #}
+      <div class="col-lg-6">
+        <div class="card shadow-sm h-100">
+          <div class="card-header bg-white">
+            <h2 class="h5 mb-0">
+              User Roles
+            </h2>
+          </div>
+
+          <ul class="list-group list-group-flush overflow-auto" style="max-height: 480px;">
+            {% for role in includedRoles %}
+              <li
+                class="list-group-item d-flex justify-content-between align-items-center"
+              >
+                <span>{{ role.description }}</span>
+                <button
+                  type="button"
+                  class="btn btn-sm btn-outline-danger"
+                  data-bs-toggle="modal"
+                  data-bs-target="#confirmRemoveModal"
+                  data-item-id="{{ role.id }}"
+                  data-item-name="{{ role.description }}"
+                >
+                  <i class="bi bi-trash"></i> Remove
+                </button>
+              </li>
+            {% empty %}
+              <li class="list-group-item text-muted fst-italic">
+                This user has no roles.
+              </li>
+            {% endfor %}
+          </ul>
+
+          <div class="card-footer bg-white">
+            <form method="post" class="row g-2">
+              <input type="hidden" name="action" value="add_role" />
+              {% csrf_token %}
+              <div class="col">
+                <label for="roleSelect" class="visually-hidden">Role</label>
+                <select
+                  id="roleSelect"
+                  name="role"
+                  class="form-select"
+                  required
+                >
+                  <option value="" selected disabled>
+                    Select a role to add...
+                  </option>
+                  {% for role in otherRoles %}
+                    <option value="{{ role.id }}">
+                      {{ role.description }}
+                    </option>
+                  {% endfor %}
+                </select>
+              </div>
+              <div class="col-auto">
+                <button type="submit" class="btn btn-primary">
+                  <i class="bi bi-plus-lg"></i> Add Role
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      </div>
+
+      {# ============ History ============ #}
+       <div class="col-lg-6">
+        <div class="card shadow-sm h-100">
+          <div class="card-header bg-white">
+            <h2 class="h5 mb-0">
+              User History
+            </h2>
+          </div>
+           <ul class="list-group list-group-flush overflow-auto" style="max-height: 480px;">
+            {% for interaction in interactions %}
+              <li
+                class="list-group-item d-flex justify-content-between align-items-center"
+              >
+                <span>{{ interaction.door }}</span>
+                <span>{{interaction.date}}</span>
+                
+                  {% if interaction.result %}
+                  <span class="badge text-bg-success">Allowed</span>  
+                  {% else %}
+                   <span class="badge text-bg-danger">Denied</span>  
+                  {% endif %}
+                
+              </li>
+            {% empty %}
+              <li class="list-group-item text-muted fst-italic">
+                This user has not entered any doors.
+              </li>
+            {% endfor %}
+           </ul>
+          </div>
+          </div>
     </div>
-
   </div>
-</div>
-<div class="modal fade" id="confirmRemoveModal" tabindex="-1" aria-labelledby="confirmRemoveLabel" aria-hidden="true">
-  <div class="modal-dialog modal-dialog-centered">
-    <form method="post" id="confirmRemoveForm" class="modal-content">
-      {% csrf_token %}
-      <input type="hidden" name="action" value="remove">
-      <input type="hidden" name="item_id" id="removeId">
-      <div class="modal-header">
-        <h5 class="modal-title" id="confirmRemoveLabel">Confirm removal</h5>
-        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-      </div>
-      <div class="modal-body">
-        Remove the role
-        <strong id="confirmRemoveName"></strong>
-        for <strong>{{ user.name }}</strong>?
-      </div>
-      <div class="modal-footer">
-        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
-        <button type="submit" class="btn btn-danger">Remove</button>
-      </div>
-    </form>
+  <div
+    class="modal fade"
+    id="confirmRemoveModal"
+    tabindex="-1"
+    aria-labelledby="confirmRemoveLabel"
+    aria-hidden="true"
+  >
+    <div class="modal-dialog modal-dialog-centered">
+      <form method="post" id="confirmRemoveForm" class="modal-content">
+        {% csrf_token %}
+        <input type="hidden" name="action" value="remove" />
+        <input type="hidden" name="item_id" id="removeId" />
+        <div class="modal-header">
+          <h5 class="modal-title" id="confirmRemoveLabel">Confirm removal</h5>
+          <button
+            type="button"
+            class="btn-close"
+            data-bs-dismiss="modal"
+            aria-label="Close"
+          ></button>
+        </div>
+        <div class="modal-body">
+          Remove the role
+          <strong id="confirmRemoveName"></strong>
+          for <strong>{{ user.name }}</strong>?
+        </div>
+        <div class="modal-footer">
+          <button
+            type="button"
+            class="btn btn-secondary"
+            data-bs-dismiss="modal"
+          >
+            Cancel
+          </button>
+          <button type="submit" class="btn btn-danger">Remove</button>
+        </div>
+      </form>
+    </div>
   </div>
-</div>
-<script>
-  document.getElementById('confirmRemoveModal').addEventListener('show.bs.modal', (e) => {
-    const btn = e.relatedTarget;
-    document.getElementById('confirmRemoveName').textContent = btn.dataset.itemName;
+  <script>
+    document
+      .getElementById("confirmRemoveModal")
+      .addEventListener("show.bs.modal", (e) => {
+        const btn = e.relatedTarget;
+        document.getElementById("confirmRemoveName").textContent =
+          btn.dataset.itemName;
 
-    document.getElementById('removeId').value = btn.dataset.itemId;
-  });
-</script>
+        document.getElementById("removeId").value = btn.dataset.itemId;
+      });
+  </script>
 {% endblock content %}
