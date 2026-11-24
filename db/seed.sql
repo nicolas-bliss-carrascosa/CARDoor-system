@@ -10,13 +10,13 @@ INSERT INTO "Users" ("UserId", "Name", "DateIssued") VALUES
   (6, 'Frank NewHire',  '2026-10-19 09:00:00');  -- no roles yet
 
 INSERT INTO "Roles" ("RoleId", "description") VALUES
-  (1, 'Admin'),
+  (0, 'Admin'),
   (2, 'Employee'),
   (3, 'Contractor'),
   (4, 'Janitorial');
 
-INSERT INTO "UserXRole" ("UserId", "UserRoleId", "DateIssued") VALUES
-  (1, 1, '2026-01-05 09:05:00'),
+INSERT INTO "UserXRole" ("UserId", "RoleId", "DateIssued") VALUES
+  (1, 0, '2026-01-05 09:05:00'),
   (2, 2, '2026-02-10 09:05:00'),
   (3, 3, '2026-03-01 09:05:00'),
   (4, 4, '2026-03-15 09:05:00'),
@@ -38,8 +38,8 @@ INSERT INTO "Doors" ("DoorId", "FacilityId", "Name", "ExpectedState") VALUES
 
 -- Facility-wide access by role. NULL ValidFrom/ValidTo = unbounded.
 INSERT INTO "FacilityXRole" ("FacilityId", "RoleId", "DateIssued", "ValidFrom", "ValidTo") VALUES
-  (1, 1, '2026-01-05 09:10:00', NULL,       NULL),        -- Admin: HQ, always
-  (2, 1, '2026-01-05 09:10:00', NULL,       NULL),        -- Admin: Warehouse, always
+  (1, 0, '2026-01-05 09:10:00', NULL,       NULL),        -- Admin: HQ, always
+  (2, 0, '2026-01-05 09:10:00', NULL,       NULL),        -- Admin: Warehouse, always
   (1, 2, '2026-02-10 09:10:00', '08:00:00', '18:00:00'),  -- Employee: HQ, business hours
   (2, 3, '2026-03-01 09:10:00', '07:00:00', '17:00:00'),  -- Contractor: Warehouse, daytime
   (1, 4, '2026-03-15 09:10:00', '18:00:00', '23:59:59'),  -- Janitorial: HQ, evenings

@@ -7,6 +7,7 @@ use network_ctrl::tcp_ctrl;
 
 use crate::{network_ctrl::{Request, Response}, sql_ctrl::{Empty, Central}};
 
+mod demo_database;
 
 /*
      * Okay, so the following are some weird fantasies I have designed to *test* my code... I know, lame
@@ -22,51 +23,53 @@ use crate::{network_ctrl::{Request, Response}, sql_ctrl::{Empty, Central}};
      */
 
 fn main() {
-    let net = match tcp_ctrl::start("127.0.0.1:7000") {
-        Ok(n) => n,
-        Err(e) => { panic!("Network failed to start: {e}") }
-    };
-    println!("Listenning!!");
-
-    let database = Central::<Empty>::new();
-    let database = database.connect();
-    let mut database = database.prepare_queries();
-    
-    // A vector for the senders I WILL NOT answer. This is to test the timeout function :)
-    let mut stalled: Vec<Sender<Response>> = Vec::new();
-
-    loop {
-        loop {
-            match net.events.try_recv() {
-                Ok(ev) => {
-                    match ev.request {
-                        Request::Ping(ping_data) => {
-                            println!("{} sent a PING from door {}", ev.peer, ping_data.door_id);
-                            let _ = ev.reply.send(match database.check_open(ping_data) {
-                                true => Response::Granted,
-                                false => Response::Denied
-                            });
-                        }
-                        Request::Scan(scan_data) => {
-                            println!("{} sent a SCAN from door {} by user {}", ev.peer, scan_data.door_id, scan_data.user_id);
-                            match scan_data.user_id.as_str() {
-                                "alice" => {let _ = ev.reply.send(Response::Granted); }
-                                // We make this little guy wait :(
-                                "dna" => stalled.push(ev.reply),
-                                _ => {let _ = ev.reply.send(Response::Denied); }
-                            }
-                        }
-                    }
-                }
-                Err(TryRecvError::Empty) => break,
-                Err(TryRecvError::Disconnected) => {
-                    eprintln!("Network layer disconnected????");
-                    return;
-                }
-            }
-
-        }
-        stalled.retain(|_| true);
-        thread::sleep(Duration::from_millis(10));
-    }
+    demo_database::test();
 }
+    // let net = match tcp_ctrl::start("127.0.0.1:7000") {
+        // Ok(n) => n,
+        // Err(e) => { panic!("Network failed to start: {e}") }
+    // };
+    // println!("Listenning!!");
+
+    // let database = Central::<Empty>::new();
+    // let database = database.connect();
+    // let mut database = database.prepare_queries();
+    
+//     // A vector for the senders I WILL NOT answer. This is to test the timeout function :)
+//     let mut stalled: Vec<Sender<Response>> = Vec::new();
+
+//     loop {
+//         loop {
+//             match net.events.try_recv() {
+//                 Ok(ev) => {
+//                     match ev.request {
+//                         Request::Ping(ping_data) => {
+//                             println!("{} sent a PING from door {}", ev.peer, ping_data.door_id);
+//                             let _ = ev.reply.send(match database.check_open(ping_data) {
+//                                 true => Response::Granted,
+//                                 false => Response::Denied
+//                             });
+//                         }
+//                         Request::Scan(scan_data) => {
+//                             println!("{} sent a SCAN from door {} by user {}", ev.peer, scan_data.door_id, scan_data.user_id);
+//                             match scan_data.user_id.as_str() {
+//                                 "alice" => {let _ = ev.reply.send(Response::Granted); }
+//                                 // We make this little guy wait :(
+//                                 "dna" => stalled.push(ev.reply),
+//                                 _ => {let _ = ev.reply.send(Response::Denied); }
+//                             }
+//                         }
+//                     }
+//                 }
+//                 Err(TryRecvError::Empty) => break,
+//                 Err(TryRecvError::Disconnected) => {
+//                     eprintln!("Network layer disconnected????");
+//                     return;
+//                 }
+//             }
+
+//         }
+//         stalled.retain(|_| true);
+//         thread::sleep(Duration::from_millis(10));
+//     }
+// }

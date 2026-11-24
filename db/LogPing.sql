@@ -1,4 +1,4 @@
 INSERT INTO 'LivenessLog'
-    (DoorId, Date)
+    (DoorId, Date, Sent)
 VALUES 
-    (?1, ?2)
+    (?1, ?2, ?3)

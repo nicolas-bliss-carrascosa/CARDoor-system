@@ -13,9 +13,7 @@ pub struct Central<STATE> {
 
 // TODO: whole lotta unwraps... more error handling!
 // TODO: pull out the paths to the db init query and the db to something in the config file
-// TODO: fix queries to handle the time ranges
-//       and!! the DoorXRole override
-// TODO: update the expected state on liveness
+// TODO: fr fr testing!!
 
 pub struct Empty;
 
@@ -37,6 +35,7 @@ pub struct Query {
     check_open: String,
     door_exists: String,
     user_exists: String,
+    update_expected: String,
 }
 
 fn load_query_strings() -> Query {
@@ -47,6 +46,7 @@ fn load_query_strings() -> Query {
     let check_open = fs::read_to_string(Path::new("../db/DoorOpenPublic.sql")).unwrap();
     let door_exists = fs::read_to_string(Path::new("../db/DoorExists.sql")).unwrap();
     let user_exists = fs::read_to_string(Path::new("../db/UserExists.sql")).unwrap();
+    let update_expected = fs::read_to_string(Path::new("../db/UpdateExpected.sql")).unwrap();
 
     Query {
         log_scan,
@@ -54,7 +54,8 @@ fn load_query_strings() -> Query {
         log_ping,
         check_open,
         door_exists,
-        user_exists
+        user_exists,
+        update_expected,
     }
 }
 
@@ -103,9 +104,9 @@ impl Central<Empty> {
     }
 
     fn check_database_init(conn: &Connection) -> bool {
-        let version = conn.query_one("SELECT user_version FROM pragma_user_version", [], |r| r.get(0));
+        let version = conn.query_one("SELECT user_version FROM pragma_user_version", [], |r| r.get::<usize, i32>(0));
         match version {
-            Ok(1) => true,
+            Ok(x) if x >= 1 => true,
             Ok(_) => false,
             Err(e) => {
                 eprintln!("Error while reading database user_version {:?}", e);
@@ -130,6 +131,7 @@ impl Central<Empty> {
         let mut conn = Self::get_connection().unwrap();
 
         if !Self::check_database_init(&conn) {
+            println!("Database not initialized: initializing");
             // should probably be something in-between re-init the database and do nothing...
             let _ = Self::init_database(&mut conn, &load_database_init_query().unwrap());
         }
@@ -173,7 +175,7 @@ impl Central<Connected> {
 }
 
 impl Central<Stable> {
-    fn log_ping(&mut self, ping: PingData) {
+    fn log_ping(&mut self, ping: PingData, response: String) {
         let mut command = self
             ._state
             .connection
@@ -183,6 +185,7 @@ impl Central<Stable> {
         let _ = command.execute([
             ping.door_id,
             current_time_unix(),
+            response // having this be a string is a little strange...
         ]);
     }
 
@@ -274,12 +277,28 @@ impl Central<Stable> {
         }
     }
 
+    fn update_expected(&mut self, ping: PingData, public: bool) {
+        let mut command = self
+            ._state
+            .connection
+            .prepare_cached(&self._state.queries.update_expected)
+            .unwrap();
+        
+        let _ = command.execute([
+            ping.door_id,
+            public.to_string(),
+        ]);
+    }
+
     pub fn check_open(&mut self, ping: PingData) -> bool {
         if !self.check_door_exists(ping.door_id.clone()) { 
             return false
         }
         let response = self.check_open_query(ping.clone());
-        self.log_ping(ping);
+        // maybe should store something richer than response.to_string as the sent response
+        self.log_ping(ping.clone(), response.to_string()); 
+        // update the expected state
+        self.update_expected(ping, response);
         response
     }
 }

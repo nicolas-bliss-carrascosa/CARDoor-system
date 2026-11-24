@@ -2,6 +2,11 @@
 -- NOTE: foreign keys are only enforced if you run `PRAGMA foreign_keys = ON;`
 -- on every connection (SQLite default is OFF).
 
+-- the times in timeRanges are HH:MM:SS format, UTC
+-- timeRanges don't support wrapping around midnight (though 24:00:00 is supported as a midnight)
+
+-- bools are just integers with 0 as false and 1 as true
+
 CREATE TABLE IF NOT EXISTS `Users` (
   `UserId` integer PRIMARY KEY,
   `Name` varchar(255),
@@ -12,7 +17,7 @@ CREATE TABLE IF NOT EXISTS `Roles` (
   `RoleId` integer PRIMARY KEY,
   `description` varchar(255)
 );
- 
+
 CREATE TABLE IF NOT EXISTS `Facilities` (
   `FacilityId` integer PRIMARY KEY,
   `Name` varchar(255)
@@ -27,9 +32,9 @@ CREATE TABLE IF NOT EXISTS `Doors` (
  
 CREATE TABLE IF NOT EXISTS `UserXRole` (
   `UserId` integer REFERENCES `Users` (`UserId`),
-  `UserRoleId` integer REFERENCES `Roles` (`RoleId`),
+  `RoleId` integer REFERENCES `Roles` (`RoleId`),
   `DateIssued` timestamp,
-  PRIMARY KEY (`UserId`, `UserRoleId`)
+  PRIMARY KEY (`UserId`, `RoleId`)
 );
  
 CREATE TABLE IF NOT EXISTS `FacilityXRole` (
@@ -43,28 +48,29 @@ CREATE TABLE IF NOT EXISTS `FacilityXRole` (
 CREATE TABLE IF NOT EXISTS `DoorXRole` (
   `RoleId` integer REFERENCES `Roles` (`RoleId`),
   `DoorId` integer REFERENCES `Doors` (`DoorId`),
-  `Allowed` bool,
+  `Allowed` bool, -- here to allow doors to be cut out of facility-wide rules (does not generically block someone with the role)
   `DateIssued` timestamp,
   PRIMARY KEY (`RoleId`, `DoorId`)
 );
 
+-- the role has access to this facility if the current time is in _any_ of the ranges!
 CREATE TABLE IF NOT EXISTS `FacilityXRoleXTimeRange` (
 	`RoleId` integer REFERENCES `Roles` (`RoleId`),
 	`FacilityId` integer REFERENCES `Facilities` (`FacilityId`),
-	-- TODO: if you mess this up the computer kills you
-	-- here, the timestamps are HH:MM:SS format!
-	`StartTime` timestamp,
-	`EndTime` timestamp,
+	`StartTime` text NOT NULL
+    CHECK (typeof(StartTime) = 'text' AND time(StartTime) IS StartTime),
+	`EndTime` text NOT NULL
+    CHECK (typeof(EndTime) = 'text' AND time(EndTime) IS EndTime),
 	PRIMARY KEY (`RoleId`, `FacilityId`, `StartTime`, `EndTime`)
 );
 
 CREATE TABLE IF NOT EXISTS `DoorXRoleXTimeRange` (
 	`RoleId` integer REFERENCES `Roles` (`RoleId`),
 	`DoorId` integer REFERENCES `Doors` (`DoorId`),
-	-- TODO: if you mess this up the computer kills you
-	-- here, the timestamps are HH:MM:SS format!
-	`StartTime` timestamp,
-	`EndTime` timestamp,
+	`StartTime` text NOT NULL
+    CHECK (typeof(StartTime) = 'text' AND time(StartTime) IS StartTime),
+	`EndTime` text NOT NULL
+    CHECK (typeof(EndTime) = 'text' AND time(EndTime) IS EndTime),
 	PRIMARY KEY (`RoleId`, `DoorId`, `StartTime`, `EndTime`)
 );
 
@@ -73,7 +79,7 @@ CREATE TABLE IF NOT EXISTS `Logs` (
   `DoorId` integer REFERENCES `Doors` (`DoorId`),
   `UserId` integer REFERENCES `Users` (`UserId`),
   `Date` timestamp,
-  `Result` bool,
+  `Result` bool, 
   PRIMARY KEY (`DoorId`, `UserId`, `Date`)
 );
  
