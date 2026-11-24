@@ -248,7 +248,7 @@ fn main_window(app: &adw::Application) {
                         protocol_row.set_subtitle(&protocol);
                         uid_row.set_subtitle(&uid);
 
-                        let door_id = sanitize_token(&door_id_row.text(), DEFAULT_DOOR_ID);
+                        let door_id = sanitize_token(&String::from(door_id_row.text()), DEFAULT_DOOR_ID);
                         let _ = tcp_cmd_tx.send(TcpCommand::Scan {
                             door_id,
                             user_id: uid,
