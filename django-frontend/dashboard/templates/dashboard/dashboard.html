@@ -1,38 +1,222 @@
 {% extends 'base.html' %}
 {% block title %}Dashboard{% endblock title %}
 {% block content %}
+<style>
+  .stat-card { transition: transform .15s ease, box-shadow .15s ease; }
+  .stat-card:hover { transform: translateY(-3px); box-shadow: 0 .5rem 1rem rgba(0, 0, 0, .12) !important; }
+  .stat-icon { width: 3.25rem; height: 3.25rem; }
+</style>
+
 <div class="container">
-    <div class="row my-4">
-        <div class="col">
-            <div class="card">
-                <div class="card-body">
-                    <div class="card-title">
-                        Interactions
+    <div class="row g-3 my-4">
+
+        {# ---------- Interactions ---------- #}
+        <div class="col-12 col-md-6">
+            <div class="card stat-card border-0 border-start border-primary border-4 shadow-sm h-100">
+                <div class="card-body d-flex align-items-center gap-3">
+                    <div class="stat-icon rounded-circle bg-primary bg-opacity-10 text-primary d-flex align-items-center justify-content-center flex-shrink-0">
+                        <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                             stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                            <path d="M5 21V4a1 1 0 0 1 1-1h12a1 1 0 0 1 1 1v17"/>
+                            <path d="M3 21h18"/>
+                            <circle cx="15" cy="12.5" r="1" fill="currentColor"/>
+                        </svg>
                     </div>
-                    {{interactions|length}} interactions reported today
+                    <div class="flex-grow-1">
+                        <div class="text-uppercase text-muted small fw-semibold">
+                            Interaction{{ interactions|length|pluralize }} today
+                        </div>
+                        <div class="display-5 fw-bold lh-1 my-1">{{ interactions|length }}</div>
+                        <a href="#" class="stretched-link small fw-semibold text-decoration-none"
+                           data-bs-toggle="modal" data-bs-target="#interactionsModal">
+                            View interaction{{ interactions|length|pluralize }} &rarr;
+                        </a>
+                    </div>
                 </div>
             </div>
         </div>
-        <div class="col">
-                        <div class="card">
-                <div class="card-body">
-                    <div class="card-title">
-                        Alerts
+
+        {# ---------- Alerts (red when there are any, green when clear) ---------- #}
+        <div class="col-12 col-md-6">
+            <div class="card stat-card border-0 border-start border-{% if alerts %}danger{% else %}success{% endif %} border-4 shadow-sm h-100">
+                <div class="card-body d-flex align-items-center gap-3">
+                    <div class="stat-icon rounded-circle bg-{% if alerts %}danger{% else %}success{% endif %} bg-opacity-10 text-{% if alerts %}danger{% else %}success{% endif %} d-flex align-items-center justify-content-center flex-shrink-0">
+                        <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                             stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                            <path d="M12 3 2 20h20L12 3z"/>
+                            <path d="M12 10v4"/>
+                            <circle cx="12" cy="17" r=".5" fill="currentColor"/>
+                        </svg>
                     </div>
-                    {{alerts|length}} alerts reported today
+                    <div class="flex-grow-1">
+                        <div class="text-uppercase text-muted small fw-semibold">
+                            Alert{{ alerts|length|pluralize }} today
+                        </div>
+                        <div class="display-5 fw-bold lh-1 my-1 text-{% if alerts %}danger{% else %}success{% endif %}">
+                            {{ alerts|length }}
+                        </div>
+                        <a href="#" class="stretched-link small fw-semibold text-decoration-none text-{% if alerts %}danger{% else %}success{% endif %}"
+                           data-bs-toggle="modal" data-bs-target="#alertsModal">
+                            {% if alerts %}View alert{{ alerts|length|pluralize }}{% else %}All clear{% endif %} &rarr;
+                        </a>
+                    </div>
                 </div>
             </div>
         </div>
+
     </div>
     <div class="row my-4">
         <div class="col">
             <div class="card">
                 <div class="card-body">
-                    {{div|safe}}
+                    {{ div|safe }}
                 </div>
             </div>
         </div>
     </div>
 </div>
-{{script|safe}}
+{{ script|safe }}
+
+{# ---------- Interactions modal (rows come straight from the `interactions` queryset) ---------- #}
+<div class="modal fade" id="interactionsModal" tabindex="-1" aria-labelledby="interactionsModalLabel"
+     aria-hidden="true" data-paginate data-page-size="20">
+  <div class="modal-dialog modal-lg modal-dialog-scrollable">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title" id="interactionsModalLabel">
+          Interactions <span class="badge text-bg-secondary">{{ interactions|length }}</span>
+        </h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+      </div>
+      <div class="modal-body">
+        <p class="text-muted {% if interactions %}d-none{% endif %}" data-empty>No interactions.</p>
+        <table class="table table-sm table-striped align-middle mb-0">
+          <thead>
+            <tr>
+              <th scope="col">Date</th>
+              <th scope="col">Door</th>
+              <th scope="col">User</th>
+              <th scope="col">Result</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for i in interactions %}
+            <tr>
+              <td>{{ i.date|date:"Y-m-d H:i:s" }}</td>
+              <td>{{ i.door_id }}</td>
+              <td>{{ i.user_id }}</td>
+              <td>
+                {% if i.result %}
+                  <span class="badge text-bg-success">Success</span>
+                {% else %}
+                  <span class="badge text-bg-danger">Failure</span>
+                {% endif %}
+              </td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+      <div class="modal-footer justify-content-between">
+        <small class="text-muted" data-page-label></small>
+        <nav aria-label="Interactions pages">
+          <ul class="pagination pagination-sm mb-0" data-pagination></ul>
+        </nav>
+      </div>
+    </div>
+  </div>
+</div>
+
+{# ---------- Alerts modal (rows come straight from the `alerts` list) ---------- #}
+<div class="modal fade" id="alertsModal" tabindex="-1" aria-labelledby="alertsModalLabel"
+     aria-hidden="true" data-paginate data-page-size="20">
+  <div class="modal-dialog modal-lg modal-dialog-scrollable">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title" id="alertsModalLabel">
+          Alerts <span class="badge text-bg-secondary">{{ alerts|length }}</span>
+        </h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+      </div>
+      <div class="modal-body">
+        <p class="text-muted {% if alerts %}d-none{% endif %}" data-empty>No alerts.</p>
+        <table class="table table-sm table-striped align-middle mb-0">
+          <thead>
+            <tr><th scope="col">ID</th><th scope="col">Name</th><th scope="col">Message</th></tr>
+          </thead>
+          <tbody>
+            {% for a in alerts %}
+            <tr>
+              <td>{{ a.obj_id }}</td>
+              <td>{{ a.name }}</td>
+              <td>{{ a.message }}</td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+      <div class="modal-footer justify-content-between">
+        <small class="text-muted" data-page-label></small>
+        <nav aria-label="Alerts pages">
+          <ul class="pagination pagination-sm mb-0" data-pagination></ul>
+        </nav>
+      </div>
+    </div>
+  </div>
+</div>
+
+{# ---------- Shared pagination for every modal marked data-paginate ---------- #}
+<script>
+document.querySelectorAll("[data-paginate]").forEach(function (modalEl) {
+  const rows = Array.from(modalEl.querySelectorAll("tbody tr"));
+  const pageSize = parseInt(modalEl.dataset.pageSize, 10) || 20;
+  const numPages = Math.max(1, Math.ceil(rows.length / pageSize));
+  const pagination = modalEl.querySelector("[data-pagination]");
+  const pageLabel = modalEl.querySelector("[data-page-label]");
+  const WINDOW = 2; // page numbers shown on each side of the current page
+
+  function pageItem(label, page, opts) {
+    opts = opts || {};
+    const li = document.createElement("li");
+    li.className = "page-item" + (opts.active ? " active" : "") + (opts.disabled ? " disabled" : "");
+    const a = document.createElement("a");
+    a.className = "page-link";
+    a.href = "#";
+    a.textContent = label;
+    a.addEventListener("click", function (e) {
+      e.preventDefault();
+      if (!opts.disabled && !opts.active) render(page);
+    });
+    li.append(a);
+    return li;
+  }
+
+  function renderPagination(current) {
+    const items = [pageItem("\u00ab", current - 1, { disabled: current <= 1 })];
+    const start = Math.max(1, current - WINDOW);
+    const end = Math.min(numPages, current + WINDOW);
+    if (start > 1) {
+      items.push(pageItem("1", 1));
+      if (start > 2) items.push(pageItem("\u2026", 0, { disabled: true }));
+    }
+    for (let p = start; p <= end; p++) items.push(pageItem(String(p), p, { active: p === current }));
+    if (end < numPages) {
+      if (end < numPages - 1) items.push(pageItem("\u2026", 0, { disabled: true }));
+      items.push(pageItem(String(numPages), numPages));
+    }
+    items.push(pageItem("\u00bb", current + 1, { disabled: current >= numPages }));
+    pagination.replaceChildren(...items);
+  }
+
+  function render(page) {
+    rows.forEach(function (tr, i) {
+      tr.classList.toggle("d-none", i < (page - 1) * pageSize || i >= page * pageSize);
+    });
+    pageLabel.textContent = "Page " + page + " of " + numPages;
+    renderPagination(page);
+  }
+
+  modalEl.addEventListener("show.bs.modal", function () { render(1); });
+});
+</script>
 {% endblock content %}

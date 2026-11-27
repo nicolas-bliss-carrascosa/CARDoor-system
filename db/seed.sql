@@ -60,29 +60,46 @@ BEGIN;
 
 -- ------------------------------------------------------------ dashboard app
 -- Door access attempts (Result: TRUE = granted)
-INSERT INTO "Logs" ("DoorId", "UserId", "Date", "Result") VALUES
-  (1, 1, '2026-10-19 08:02:11', TRUE),
-  (1, 2, '2026-10-19 08:15:40', TRUE),
-  (1, 5, '2026-10-19 08:31:05', TRUE),
-  (3, 2, '2026-10-19 09:10:22', TRUE),
-  (3, 5, '2026-10-19 09:12:57', FALSE),   -- Eve revoked from Lab
-  (2, 2, '2026-10-19 10:03:18', TRUE),    -- Bob's Server Room exception
-  (2, 5, '2026-10-19 10:20:44', FALSE),
-  (4, 3, '2026-10-19 07:05:30', TRUE),
-  (6, 3, '2026-10-19 07:42:09', FALSE),   -- Contractor denied Cage
-  (5, 1, '2026-10-19 11:00:00', TRUE),
-  (1, 6, '2026-10-19 09:30:12', FALSE),   -- Frank has no roles
-  (1, 4, '2026-10-18 18:45:03', TRUE),
-  (2, 4, '2026-10-18 19:10:51', FALSE);   -- Janitorial denied Server Room
+-- INSERT INTO "Logs" ("DoorId", "UserId", "Date", "Result") VALUES
+--   (1, 1, '2026-11-19 08:02:11', TRUE),
+--   (1, 2, '2026-11-19 08:15:40', TRUE),
+--   (1, 5, '2026-11-19 08:31:05', TRUE),
+--   (3, 2, '2026-11-19 09:11:22', TRUE),
+--   (3, 5, '2026-11-19 09:12:57', FALSE),   -- Eve revoked from Lab
+--   (2, 2, '2026-11-19 11:03:18', TRUE),    -- Bob's Server Room exception
+--   (2, 5, '2026-11-19 11:03:44', FALSE),
+--   (4, 3, '2026-11-19 07:05:30', TRUE),
+--   (6, 3, '2026-11-19 07:42:09', FALSE),   -- Contractor denied Cage
+--   (5, 1, '2026-11-19 11:00:00', TRUE),
+--   (1, 6, '2026-11-19 09:30:12', FALSE),   -- Frank has no roles
+--   (1, 4, '2026-11-18 18:45:03', TRUE),
+--   (2, 4, '2026-11-18 19:11:51', FALSE);   -- Janitorial denied Server Room
 
--- Door heartbeat messages
-INSERT INTO "LivenessLog" ("DoorId", "Date", "Sent") VALUES
-  (1, '2026-10-19 11:00:00', 'PING'),
-  (1, '2026-10-19 11:05:00', 'PING'),
-  (2, '2026-10-19 11:00:00', 'PING'),
-  (3, '2026-10-19 11:00:00', 'PING'),
-  (4, '2026-10-19 11:00:00', 'PING'),
-  (5, '2026-10-19 11:00:00', 'PING'),
-  (6, '2026-10-19 10:00:00', 'PING');   -- Cage has gone quiet since 10:00
+-- -- Door heartbeat messages
+-- INSERT INTO "LivenessLog" ("DoorId", "Date", "Sent") VALUES
+--   (1, '2026-11-17 11:00:00', 'PING'),
+--   (1, '2026-11-18 11:05:00', 'PING'),
+--   (2, '2026-11-19 11:00:00', 'PING'),
+--   (3, '2026-11-20 11:00:00', 'PING'),
+--   (4, '2026-11-21 11:00:00', 'PING'),
+--   (5, '2026-11-22 11:00:00', 'PING'),
+--   (6, '2026-11-23 10:00:00', 'PING');   -- Cage has gone quiet since 10:00
+
+
+INSERT INTO "Logs" ("DoorId", "UserId", "Date", "Result") VALUES
+  (1, 1, '2026-11-19 08:02:11', TRUE),
+  (1, 2, '2026-11-19 08:15:40', TRUE),
+  (1, 5, '2026-11-19 08:31:05', TRUE),
+  (3, 2, '2026-11-19 09:11:22', TRUE),
+  (3, 5, '2026-11-19 09:12:57', FALSE),   -- Eve revoked from Lab
+  (2, 2, '2026-11-19 11:03:18', TRUE),    -- Bob's Server Room exception
+  (2, 5, '2026-11-19 11:03:44', FALSE),
+  (4, 3, '2026-11-19 07:05:30', TRUE),
+  (6, 3, '2026-11-19 07:42:09', FALSE),   -- Contractor denied Cage
+  (5, 1, '2026-11-19 11:00:00', TRUE),
+  (1, 6, '2026-11-19 09:30:12', FALSE),   -- Frank has no roles
+  (1, 4, '2026-11-18 18:45:03', TRUE),
+  (2, 4, '2026-11-18 19:11:51', FALSE);   -- Janitorial denied Server Room
+
 
 COMMIT;
